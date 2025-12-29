@@ -174,8 +174,11 @@
       .equivalent-controls {
         padding: 10px 12px;
         border-radius: 14px;
-        background: transparent;
-        border: 1px dashed rgba(0, 0, 0, 0.14);
+        background:
+          radial-gradient(900px 500px at 10% -10%, #ffe8c7 0, transparent 60%),
+          radial-gradient(700px 400px at 110% 10%, #d9f1ef 0, transparent 60%),
+          linear-gradient(180deg, var(--bg), var(--bg-2));
+        border: 2px dashed rgba(0, 0, 0, 0.22);
         box-shadow: none;
         margin-bottom: 10px;
       }

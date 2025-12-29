@@ -423,11 +423,11 @@ if __name__ == '__main__':
 
     # 攻击对比
     attack = Attack(attack_base, attack_skill, empress_blessing, weapon_fix, attack_percet, attack_notper)
-    attack2 = Attack(attack_base+100, attack_skill, empress_blessing, weapon_fix, attack_percet, attack_notper)
+    attack2 = Attack(attack_base, attack_skill, empress_blessing, weapon_fix, attack_percet+1, attack_notper)
 
     print("攻击对比：", attack.compare(attack2))
 
-    print((math.floor(3840 * ( 1 + 1.39)) - math.floor(3740 * (1 + 1.39))) / math.floor(3740 * (1 + 1.39)))
+    print((math.floor(3840 * ( 1 + 2.39)) - math.floor(3740 * (1 + 1.39))) / math.floor(3740 * (1 + 1.39)))
 
     print(attack_base)
 
