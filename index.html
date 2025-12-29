@@ -1,0 +1,534 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>MapleCal 战斗力计算器</title>
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;600&family=Space+Grotesk:wght@400;600&display=swap");
+
+      :root {
+        --bg: #f4efe7;
+        --bg-2: #f0e3d1;
+        --ink: #1c1b1a;
+        --muted: #6b655c;
+        --accent: #c94f2d;
+        --accent-2: #2a6f6a;
+        --card: #fff7ed;
+        --ring: rgba(201, 79, 45, 0.2);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        color: var(--ink);
+        font-family: "Noto Sans SC", "Space Grotesk", sans-serif;
+        background:
+          radial-gradient(900px 500px at 10% -10%, #ffe8c7 0, transparent 60%),
+          radial-gradient(700px 400px at 110% 10%, #d9f1ef 0, transparent 60%),
+          linear-gradient(180deg, var(--bg), var(--bg-2));
+        min-height: 100vh;
+      }
+
+      .wrap {
+        max-width: 1100px;
+        margin: 0 auto;
+        padding: 32px 20px 60px;
+      }
+
+      header {
+        display: grid;
+        gap: 12px;
+        margin-bottom: 24px;
+        animation: fadeIn 450ms ease both;
+      }
+
+      h1 {
+        font-family: "Space Grotesk", "Noto Sans SC", sans-serif;
+        font-size: clamp(28px, 4vw, 42px);
+        margin: 0;
+        letter-spacing: 0.5px;
+      }
+
+      header p {
+        margin: 0;
+        color: var(--muted);
+      }
+
+      .grid {
+        display: grid;
+        gap: 16px;
+      }
+
+      .grid-2 {
+        grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      }
+
+      .grid-3 {
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      }
+
+      .card {
+        background: var(--card);
+        border: 1px solid rgba(0, 0, 0, 0.06);
+        border-radius: 16px;
+        padding: 16px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+      }
+
+      .card h2 {
+        margin: 0 0 12px;
+        font-size: 18px;
+      }
+
+      label {
+        display: grid;
+        gap: 6px;
+        font-size: 14px;
+        color: var(--muted);
+      }
+
+      input[type="number"] {
+        padding: 10px 12px;
+        border-radius: 10px;
+        border: 1px solid rgba(0, 0, 0, 0.12);
+        background: #fff;
+        font-size: 15px;
+        outline: none;
+        transition: box-shadow 150ms ease, border-color 150ms ease;
+      }
+
+      input[type="number"]:focus {
+        border-color: var(--accent);
+        box-shadow: 0 0 0 4px var(--ring);
+      }
+
+      .actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+      }
+
+      button {
+        border: none;
+        border-radius: 999px;
+        padding: 10px 18px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        color: #fff;
+        background: var(--accent);
+        transition: transform 120ms ease, box-shadow 120ms ease;
+      }
+
+      button.secondary {
+        background: var(--accent-2);
+      }
+
+      button:active {
+        transform: translateY(1px);
+      }
+
+      .result {
+        font-family: "Space Grotesk", "Noto Sans SC", sans-serif;
+        font-size: 22px;
+        font-weight: 600;
+      }
+
+      .note {
+        color: var(--muted);
+        font-size: 13px;
+      }
+
+      .delta-list {
+        display: grid;
+        gap: 8px;
+        margin-top: 8px;
+      }
+
+      .delta-item {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 8px 10px;
+        border-radius: 12px;
+        background: rgba(0, 0, 0, 0.03);
+        font-size: 14px;
+      }
+
+      .delta-item span {
+        white-space: nowrap;
+      }
+
+      .warning {
+        color: #8c2c1a;
+        font-size: 13px;
+      }
+
+      footer {
+        margin-top: 24px;
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(8px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <header>
+        <h1>MapleCal 战斗力计算器</h1>
+        <p>纯静态页面，输入数据即可计算战斗力、面板与输出，并查看各属性增量的输出提升。</p>
+      </header>
+
+      <div class="grid grid-2">
+        <section class="card">
+          <h2>属性 (Attributes)</h2>
+          <div class="grid grid-2">
+            <label>主属性基础值
+              <input id="main_base" type="number" value="5635" />
+            </label>
+            <label>主属性技能
+              <input id="main_skill" type="number" value="448" />
+            </label>
+            <label>主属性%
+              <input id="main_percent" type="number" value="5.23" step="0.01" />
+            </label>
+            <label>主属性非%加成
+              <input id="main_notper" type="number" value="27465" />
+            </label>
+            <label>副属性基础值
+              <input id="sub_base" type="number" value="2991" />
+            </label>
+            <label>副属性技能
+              <input id="sub_skill" type="number" value="144" />
+            </label>
+            <label>副属性%
+              <input id="sub_percent" type="number" value="0.72" step="0.01" />
+            </label>
+            <label>副属性非%加成
+              <input id="sub_notper" type="number" value="540" />
+            </label>
+          </div>
+        </section>
+
+        <section class="card">
+          <h2>攻击 (Attack)</h2>
+          <div class="grid grid-2">
+            <label>攻击力基础值
+              <input id="attack_base" type="number" value="3740" />
+            </label>
+            <label>攻击力技能
+              <input id="attack_skill" type="number" value="190" />
+            </label>
+            <label>皇后祝福
+              <input id="empress_blessing" type="number" value="30" />
+            </label>
+            <label>weapon_fix
+              <input id="weapon_fix" type="number" value="-109" />
+            </label>
+            <label>攻击力%
+              <input id="attack_percet" type="number" value="1.39" step="0.01" />
+            </label>
+            <label>攻击力非%加成
+              <input id="attack_notper" type="number" value="0" />
+            </label>
+          </div>
+          <div class="grid" style="margin-top: 12px">
+            <label>已知战斗力 CP (用于推导 weapon_fix)
+              <input id="known_cp" type="number" placeholder="例如 293820984" />
+            </label>
+            <div class="actions">
+              <button id="calc_weapon_fix">推导 weapon_fix</button>
+            </div>
+            <div id="weapon_fix_note" class="note"></div>
+          </div>
+        </section>
+      </div>
+
+      <div class="grid grid-2" style="margin-top: 16px">
+        <section class="card">
+          <h2>伤害 (Damage)</h2>
+          <div class="grid grid-2">
+            <label>伤害%
+              <input id="dmg" type="number" value="1.41" step="0.01" />
+            </label>
+            <label>伤害技能%
+              <input id="dmg_skill" type="number" value="0.7" step="0.01" />
+            </label>
+            <label>Boss伤%
+              <input id="bossdmg" type="number" value="4.63" step="0.01" />
+            </label>
+            <label>Boss伤技能%
+              <input id="bossdmg_skill" type="number" value="0.63" step="0.01" />
+            </label>
+            <label>暴伤%
+              <input id="cridmg" type="number" value="1.126" step="0.001" />
+            </label>
+            <label>暴伤技能%
+              <input id="cridmg_skill" type="number" value="0.17" step="0.01" />
+            </label>
+            <label>最终伤害%
+              <input id="final_damage" type="number" value="0.54" step="0.01" />
+            </label>
+          </div>
+        </section>
+
+        <section class="card">
+          <h2>其他 (Other)</h2>
+          <div class="grid grid-2">
+            <label>创世武器最终伤害 (gwp_fd)
+              <input id="gwp_fd" type="number" value="0.1" step="0.01" />
+            </label>
+            <label>怪物最终伤害 (mst_fd)
+              <input id="mst_fd" type="number" value="0" step="0.01" />
+            </label>
+            <label>输出增量步长
+              <input id="delta_step" type="number" value="1" step="0.01" />
+            </label>
+          </div>
+          <div class="actions" style="margin-top: 12px">
+            <button id="calculate">计算</button>
+            <button id="reset" class="secondary">重置为默认值</button>
+          </div>
+          <div id="warning" class="warning"></div>
+        </section>
+      </div>
+
+      <div class="grid grid-3" style="margin-top: 16px">
+        <section class="card">
+          <h2>战斗力</h2>
+          <div class="result" id="combat_power">-</div>
+          <div class="note">基于 Attribute.calculate + Attack.calculate + Damage.calculate。</div>
+        </section>
+        <section class="card">
+          <h2>面板</h2>
+          <div class="result" id="panel_output">-</div>
+          <div class="note">使用 calculate_mianban 公式。</div>
+        </section>
+        <section class="card">
+          <h2>输出</h2>
+          <div class="result" id="damage_output">-</div>
+          <div class="note">使用 calculate_damage_output（旧公式）。</div>
+        </section>
+      </div>
+
+      <section class="card" style="margin-top: 16px">
+        <h2>输出增量（每 +1）</h2>
+        <div class="note">增量步长基于“输出增量步长”，单位与输入一致。</div>
+        <div class="delta-list" id="delta_list"></div>
+      </section>
+
+      <footer>
+        公式来源：calculator.py。若你需要改公式或增加模块，告诉我。
+      </footer>
+    </div>
+
+    <script>
+      const defaults = {
+        main_base: 5635,
+        main_skill: 448,
+        main_percent: 5.23,
+        main_notper: 27465,
+        sub_base: 2991,
+        sub_skill: 144,
+        sub_percent: 0.72,
+        sub_notper: 540,
+        attack_base: 3740,
+        attack_skill: 190,
+        empress_blessing: 30,
+        weapon_fix: -109,
+        attack_percet: 1.39,
+        attack_notper: 0,
+        dmg: 1.41,
+        dmg_skill: 0.7,
+        bossdmg: 4.63,
+        bossdmg_skill: 0.63,
+        cridmg: 1.126,
+        cridmg_skill: 0.17,
+        final_damage: 0.54,
+        gwp_fd: 0.1,
+        mst_fd: 0,
+        delta_step: 1
+      };
+
+      const ids = Object.keys(defaults);
+
+      function num(id) {
+        const value = parseFloat(document.getElementById(id).value);
+        return Number.isFinite(value) ? value : 0;
+      }
+
+      function readValues() {
+        const values = {};
+        ids.forEach((id) => {
+          values[id] = num(id);
+        });
+        return values;
+      }
+
+      function calcAttribute(v) {
+        const mainValue = Math.floor((v.main_base - v.main_skill) * (1 + v.main_percent)) + v.main_notper;
+        const subValue = Math.floor((v.sub_base - v.sub_skill) * (1 + v.sub_percent)) + v.sub_notper;
+        return (mainValue * 4 + subValue) / 100;
+      }
+
+      function calcAttributeDamageOutput(v) {
+        const mainAttr = Math.floor(v.main_base * (1 + v.main_percent) + v.main_notper);
+        const subAttr = Math.floor(v.sub_base * (1 + v.sub_percent) + v.sub_notper);
+        return (4 * mainAttr + subAttr) / 100;
+      }
+
+      function calcAttack(v) {
+        if (!Number.isFinite(v.weapon_fix)) {
+          return null;
+        }
+        return Math.floor((v.attack_base - v.attack_skill + v.empress_blessing + v.weapon_fix) * (1 + v.attack_percet));
+      }
+
+      function calcAttackDamageOutput(v) {
+        return Math.floor((v.attack_base - v.attack_notper) * (1 + v.attack_percet) + v.attack_notper);
+      }
+
+      function calcDamage(v) {
+        const damageMultiplier = (1 + v.dmg - v.dmg_skill + v.bossdmg - v.bossdmg_skill);
+        const critMultiplier = (1.35 + v.cridmg - v.cridmg_skill);
+        return damageMultiplier * critMultiplier;
+      }
+
+      function calcCombatPower(v) {
+        const attack = calcAttack(v);
+        if (attack === null) {
+          return null;
+        }
+        const total = calcAttribute(v) * attack * calcDamage(v) * (1 + v.gwp_fd) * (1 + v.mst_fd);
+        return Math.round(total);
+      }
+
+      function calcWeaponFixFromCP(v, targetCp) {
+        const totalAttribute = calcAttribute(v);
+        const damageMultiplier = calcDamage(v);
+        const baseAttack = targetCp / (totalAttribute * damageMultiplier * (1 + v.gwp_fd) * (1 + v.mst_fd));
+        const weaponFix = baseAttack / (1 + v.attack_percet) - v.attack_base + v.attack_skill - v.empress_blessing;
+        return weaponFix;
+      }
+
+      function calcPanel(v) {
+        const weaponRate = 1.2;
+        const damage = (1 + v.dmg) * (1 + v.final_damage);
+        return Math.round(calcAttributeDamageOutput(v) * weaponRate * calcAttackDamageOutput(v) * damage);
+      }
+
+      function calcDamageOutput(v) {
+        const weaponRate = 1.2;
+        const finalDamage = (1 + v.final_damage);
+        const damage = (1 + v.dmg + v.bossdmg);
+        const cridmg = (1 + v.cridmg);
+        return Math.round(calcAttributeDamageOutput(v) * weaponRate * calcAttackDamageOutput(v) * finalDamage * damage * cridmg);
+      }
+
+      const deltaFields = [
+        ["main_base", "主属性基础值"],
+        ["main_skill", "主属性技能"],
+        ["main_percent", "主属性%"],
+        ["main_notper", "主属性非%加成"],
+        ["sub_base", "副属性基础值"],
+        ["sub_skill", "副属性技能"],
+        ["sub_percent", "副属性%"],
+        ["sub_notper", "副属性非%加成"],
+        ["attack_base", "攻击力基础值"],
+        ["attack_skill", "攻击力技能"],
+        ["empress_blessing", "皇后祝福"],
+        ["weapon_fix", "weapon_fix"],
+        ["attack_percet", "攻击力%"],
+        ["attack_notper", "攻击力非%加成"],
+        ["dmg", "伤害%"],
+        ["dmg_skill", "伤害技能%"],
+        ["bossdmg", "Boss伤%"],
+        ["bossdmg_skill", "Boss伤技能%"],
+        ["cridmg", "暴伤%"],
+        ["cridmg_skill", "暴伤技能%"],
+        ["final_damage", "最终伤害%"],
+        ["gwp_fd", "创世武器最终伤害"],
+        ["mst_fd", "怪物最终伤害"]
+      ];
+
+      function renderDeltaList(baseValues) {
+        const container = document.getElementById("delta_list");
+        const step = baseValues.delta_step || 1;
+        const baseOutput = calcDamageOutput(baseValues);
+        container.innerHTML = "";
+        deltaFields.forEach(([key, label]) => {
+          const nextValues = { ...baseValues, [key]: baseValues[key] + step };
+          const nextOutput = calcDamageOutput(nextValues);
+          const delta = nextOutput - baseOutput;
+          const item = document.createElement("div");
+          item.className = "delta-item";
+          item.innerHTML = `<span>${label}</span><span>+${step} → ${delta >= 0 ? "+" : ""}${delta}</span>`;
+          container.appendChild(item);
+        });
+      }
+
+      function calculateAll() {
+        const values = readValues();
+        const warning = document.getElementById("warning");
+        warning.textContent = "";
+
+        const combatPower = calcCombatPower(values);
+        if (combatPower === null) {
+          warning.textContent = "weapon_fix 为空时无法计算战斗力，但面板和输出仍可计算。";
+          document.getElementById("combat_power").textContent = "-";
+        } else {
+          document.getElementById("combat_power").textContent = combatPower.toLocaleString("en-US");
+        }
+
+        document.getElementById("panel_output").textContent = calcPanel(values).toLocaleString("en-US");
+        document.getElementById("damage_output").textContent = calcDamageOutput(values).toLocaleString("en-US");
+
+        renderDeltaList(values);
+      }
+
+      document.getElementById("calc_weapon_fix").addEventListener("click", () => {
+        const values = readValues();
+        const knownCp = parseFloat(document.getElementById("known_cp").value);
+        const note = document.getElementById("weapon_fix_note");
+        if (!Number.isFinite(knownCp) || knownCp <= 0) {
+          note.textContent = "请输入有效的 CP 值。";
+          return;
+        }
+        const weaponFix = calcWeaponFixFromCP(values, knownCp);
+        document.getElementById("weapon_fix").value = weaponFix.toFixed(2);
+        note.textContent = `已推导 weapon_fix = ${weaponFix.toFixed(2)}`;
+        calculateAll();
+      });
+
+      document.getElementById("calculate").addEventListener("click", calculateAll);
+      document.getElementById("reset").addEventListener("click", () => {
+        ids.forEach((id) => {
+          document.getElementById(id).value = defaults[id];
+        });
+        document.getElementById("known_cp").value = "";
+        document.getElementById("weapon_fix_note").textContent = "";
+        calculateAll();
+      });
+
+      document.querySelectorAll("input[type='number']").forEach((input) => {
+        input.addEventListener("input", calculateAll);
+      });
+
+      calculateAll();
+    </script>
+  </body>
+</html>
