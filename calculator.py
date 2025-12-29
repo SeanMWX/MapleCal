@@ -320,6 +320,36 @@ def calculate_damage_output_percent_increase(
     return results
 
 
+def calculate_equivalent_increase(
+    main_base, main_skill, main_percent, main_notper,
+    sub_base, sub_skill, sub_percent, sub_notper,
+    attack_base, attack_skill, empress_blessing, weapon_fix, attack_percet, attack_notper,
+    dmg, dmg_skill, bossdmg, bossdmg_skill, cridmg, cridmg_skill, final_damage,
+    gwp_fd, mst_fd,
+    base_field,
+    step=1.0
+):
+    percent_increase = calculate_damage_output_percent_increase(
+        main_base, main_skill, main_percent, main_notper,
+        sub_base, sub_skill, sub_percent, sub_notper,
+        attack_base, attack_skill, empress_blessing, weapon_fix, attack_percet, attack_notper,
+        dmg, dmg_skill, bossdmg, bossdmg_skill, cridmg, cridmg_skill, final_damage,
+        gwp_fd, mst_fd,
+        step=step,
+    )
+    base_percent = percent_increase.get(base_field)
+    if base_percent is None or base_percent == 0:
+        return {}
+
+    equivalents = {}
+    for key, value in percent_increase.items():
+        if value == 0:
+            equivalents[key] = None
+        else:
+            equivalents[key] = base_percent / value * step
+    return equivalents
+
+
 # Combat Power (CP value) and Damage Output
 combat_power = 0
 damage_output = 0
@@ -400,7 +430,6 @@ if __name__ == '__main__':
     print((math.floor(3840 * ( 1 + 1.39)) - math.floor(3740 * (1 + 1.39))) / math.floor(3740 * (1 + 1.39)))
 
     print(attack_base)
-
 
 
 

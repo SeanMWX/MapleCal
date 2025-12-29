@@ -132,6 +132,78 @@
         transform: translateY(1px);
       }
 
+      .toggle-group {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+
+      .toggle-group button {
+        padding: 8px 14px;
+        font-size: 13px;
+        letter-spacing: 0.2px;
+        border-radius: 999px;
+        background: #e8d8c7;
+        color: #3b2f27;
+        box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.08);
+      }
+
+      .toggle-group button.secondary {
+        background: #e8d8c7;
+        color: #3b2f27;
+      }
+
+      .toggle-group button.active {
+        background: var(--accent);
+        color: #fff;
+        box-shadow: 0 8px 20px rgba(201, 79, 45, 0.25);
+      }
+
+      .toggle-group button:hover {
+        transform: translateY(-1px);
+      }
+
+      .equivalent-module {
+        margin-top: 20px;
+      }
+
+      .equivalent-module .note {
+        margin-bottom: 12px;
+      }
+
+      .equivalent-controls {
+        padding: 10px 12px;
+        border-radius: 14px;
+        background: transparent;
+        border: 1px dashed rgba(0, 0, 0, 0.14);
+        box-shadow: none;
+        margin-bottom: 10px;
+      }
+
+      .equivalent-controls .toggle-group {
+        gap: 10px;
+      }
+
+      .equivalent-module {
+        margin-top: 20px;
+      }
+
+      .equivalent-module .note {
+        margin-bottom: 12px;
+      }
+
+      .equivalent-controls {
+        padding: 10px 12px;
+        border-radius: 14px;
+        background: rgba(255, 255, 255, 0.7);
+        border: 1px dashed rgba(0, 0, 0, 0.08);
+        margin-bottom: 12px;
+      }
+
+      .equivalent-controls .toggle-group {
+        gap: 10px;
+      }
+
       .result {
         font-family: "Space Grotesk", "Noto Sans SC", sans-serif;
         font-size: 22px;
@@ -331,6 +403,30 @@
         <div class="delta-list" id="delta_list"></div>
       </section>
 
+      <section class="card equivalent-module" style="margin-top: 16px">
+        <h2>等效换算</h2>
+        <div class="note">选择基准属性后，计算“+1 基准属性”等效于其他属性的增量。</div>
+        <div class="equivalent-controls">
+          <div class="actions toggle-group" id="equivalent_buttons">
+            <button type="button" data-base="main_base">主属性基础值</button>
+            <button type="button" data-base="main_percent" class="secondary">主属性%</button>
+            <button type="button" data-base="main_notper" class="secondary">主属性非%加成</button>
+            <button type="button" data-base="sub_base" class="secondary">副属性基础值</button>
+            <button type="button" data-base="sub_percent" class="secondary">副属性%</button>
+            <button type="button" data-base="sub_notper" class="secondary">副属性非%加成</button>
+            <button type="button" data-base="attack_base" class="secondary">攻击力基础值</button>
+            <button type="button" data-base="attack_percet" class="secondary">攻击力%</button>
+            <button type="button" data-base="attack_notper" class="secondary">攻击力非%加成</button>
+            <button type="button" data-base="dmg" class="secondary">伤害%</button>
+            <button type="button" data-base="bossdmg" class="secondary">Boss伤%</button>
+            <button type="button" data-base="cridmg" class="secondary">暴伤%</button>
+            <button type="button" data-base="final_damage" class="secondary">最终伤害%</button>
+            <button type="button" data-base="mst_fd" class="secondary">怪物最终伤害</button>
+          </div>
+        </div>
+        <div class="delta-list" id="equivalent_list"></div>
+      </section>
+
       <footer>
         公式来源：calculator.py。若你需要改公式或增加模块，告诉我。
       </footer>
@@ -402,6 +498,43 @@
         });
       }
 
+      function renderEquivalentList(items) {
+        const container = document.getElementById("equivalent_list");
+        container.innerHTML = "";
+        items.forEach((item) => {
+          const value = item.amount;
+          const row = document.createElement("div");
+          row.className = "delta-item";
+          const display = value === null || value === undefined ? "-" : value.toFixed(4);
+          row.innerHTML = `<span>${item.label}</span><span>${display}</span>`;
+          container.appendChild(row);
+        });
+      }
+
+      function getSelectedBaseField() {
+        const active = document.querySelector("#equivalent_buttons button.active");
+        return active ? active.dataset.base : "main_base";
+      }
+
+      async function fetchEquivalent(values) {
+        const baseField = getSelectedBaseField();
+        try {
+          const response = await fetch(`/api/equivalent?base_field=${encodeURIComponent(baseField)}`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(values)
+          });
+          const data = await response.json();
+          if (!response.ok) {
+            throw new Error(data.detail || "换算失败");
+          }
+          renderEquivalentList(data.items || []);
+        } catch (err) {
+          const container = document.getElementById("equivalent_list");
+          container.innerHTML = `<div class="delta-item"><span>错误</span><span>${err.message || "换算失败"}</span></div>`;
+        }
+      }
+
       async function calculateAll() {
         const values = readValues();
         const warning = document.getElementById("warning");
@@ -427,6 +560,7 @@
             warning.textContent = data.warning;
           }
           renderDeltaList(data.delta_items || []);
+          fetchEquivalent(values);
         } catch (err) {
           warning.textContent = err.message || "计算失败";
         }
@@ -460,6 +594,23 @@
       });
 
       document.getElementById("calculate").addEventListener("click", calculateAll);
+      document.querySelectorAll("#equivalent_buttons button").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          document.querySelectorAll("#equivalent_buttons button").forEach((b) => {
+            b.classList.add("secondary");
+            b.classList.remove("active");
+          });
+          btn.classList.remove("secondary");
+          btn.classList.add("active");
+          calculateAll();
+        });
+      });
+
+      const defaultButton = document.querySelector("#equivalent_buttons button[data-base='main_base']");
+      if (defaultButton) {
+        defaultButton.classList.add("active");
+        defaultButton.classList.remove("secondary");
+      }
       document.getElementById("reset").addEventListener("click", () => {
         ids.forEach((id) => {
           document.getElementById(id).value = defaults[id];

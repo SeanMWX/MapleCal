@@ -12,6 +12,7 @@ from calculator import (
     Attack,
     CombatPower,
     Damage,
+    calculate_equivalent_increase,
     calculate_damage_output_percent_increase,
 )
 
@@ -159,6 +160,34 @@ def api_calc(data: CalcInput) -> Dict[str, object]:
         "damage_output": output,
         "warning": warning,
         "delta_items": delta_items,
+    }
+
+
+@app.post("/api/equivalent")
+def api_equivalent(data: CalcInput, base_field: str) -> Dict[str, object]:
+    equivalents = calculate_equivalent_increase(
+        data.main_base, data.main_skill, data.main_percent, data.main_notper,
+        data.sub_base, data.sub_skill, data.sub_percent, data.sub_notper,
+        data.attack_base, data.attack_skill, data.empress_blessing, data.weapon_fix, data.attack_percet, data.attack_notper,
+        data.dmg, data.dmg_skill, data.bossdmg, data.bossdmg_skill, data.cridmg, data.cridmg_skill, data.final_damage,
+        data.gwp_fd, data.mst_fd,
+        base_field=base_field,
+        step=1.0,
+    )
+    items = []
+    for item in delta_fields():
+        key = item["key"]
+        items.append(
+            {
+                "key": key,
+                "label": item["label"],
+                "amount": equivalents.get(key),
+            }
+        )
+
+    return {
+        "base_field": base_field,
+        "items": items,
     }
 
 
