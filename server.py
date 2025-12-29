@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 from pathlib import Path
 from typing import Dict, List, Optional
@@ -7,7 +7,13 @@ from fastapi import FastAPI
 from fastapi.responses import HTMLResponse
 from pydantic import BaseModel
 
-from calculator import Attribute, Attack, CombatPower, Damage
+from calculator import (
+    Attribute,
+    Attack,
+    CombatPower,
+    Damage,
+    calculate_damage_output_percent_increase,
+)
 
 app = FastAPI()
 
@@ -82,38 +88,21 @@ def build_damage(data: CalcInput) -> Damage:
     )
 
 
-def calculate_output(data: CalcInput, weapon_fix: Optional[float] = None) -> int:
-    attribute = build_attribute(data)
-    attack = build_attack(data, weapon_fix)
-    damage = build_damage(data)
-    combat = CombatPower(attribute, attack, damage, data.gwp_fd, data.mst_fd)
-    return combat.calculate_damage_output()
-
-
 def delta_fields() -> List[Dict[str, str]]:
     return [
         {"key": "main_base", "label": "主属性基础值"},
-        {"key": "main_skill", "label": "主属性技能"},
         {"key": "main_percent", "label": "主属性%"},
         {"key": "main_notper", "label": "主属性非%加成"},
         {"key": "sub_base", "label": "副属性基础值"},
-        {"key": "sub_skill", "label": "副属性技能"},
         {"key": "sub_percent", "label": "副属性%"},
         {"key": "sub_notper", "label": "副属性非%加成"},
         {"key": "attack_base", "label": "攻击力基础值"},
-        {"key": "attack_skill", "label": "攻击力技能"},
-        {"key": "empress_blessing", "label": "皇后祝福"},
-        {"key": "weapon_fix", "label": "weapon_fix"},
         {"key": "attack_percet", "label": "攻击力%"},
         {"key": "attack_notper", "label": "攻击力非%加成"},
         {"key": "dmg", "label": "伤害%"},
-        {"key": "dmg_skill", "label": "伤害技能%"},
         {"key": "bossdmg", "label": "Boss伤%"},
-        {"key": "bossdmg_skill", "label": "Boss伤技能%"},
         {"key": "cridmg", "label": "暴伤%"},
-        {"key": "cridmg_skill", "label": "暴伤技能%"},
         {"key": "final_damage", "label": "最终伤害%"},
-        {"key": "gwp_fd", "label": "创世武器最终伤害"},
         {"key": "mst_fd", "label": "怪物最终伤害"},
     ]
 
@@ -144,19 +133,23 @@ def api_calc(data: CalcInput) -> Dict[str, object]:
     output = combat.calculate_damage_output()
 
     step = data.delta_step if data.delta_step and data.delta_step > 0 else 1.0
-    base_output = output
+    percent_increase = calculate_damage_output_percent_increase(
+        data.main_base, data.main_skill, data.main_percent, data.main_notper,
+        data.sub_base, data.sub_skill, data.sub_percent, data.sub_notper,
+        data.attack_base, data.attack_skill, data.empress_blessing, data.weapon_fix, data.attack_percet, data.attack_notper,
+        data.dmg, data.dmg_skill, data.bossdmg, data.bossdmg_skill, data.cridmg, data.cridmg_skill, data.final_damage,
+        data.gwp_fd, data.mst_fd,
+        step=step,
+    )
     delta_items = []
     for item in delta_fields():
         key = item["key"]
-        updated = data.model_copy()
-        setattr(updated, key, getattr(updated, key) + step)
-        next_output = calculate_output(updated)
         delta_items.append(
             {
                 "key": key,
                 "label": item["label"],
                 "step": step,
-                "delta": next_output - base_output,
+                "percent": percent_increase.get(key, 0.0),
             }
         )
 

@@ -326,8 +326,8 @@
       </div>
 
       <section class="card" style="margin-top: 16px">
-        <h2>输出增量（每 +1）</h2>
-        <div class="note">增量步长基于“输出增量步长”，单位与输入一致。</div>
+        <h2>输出增量（百分比）</h2>
+        <div class="note">步长基于“输出增量步长”，显示输出提升的百分比。</div>
         <div class="delta-list" id="delta_list"></div>
       </section>
 
@@ -392,11 +392,12 @@
         const container = document.getElementById("delta_list");
         container.innerHTML = "";
         deltaItems.forEach((item) => {
-          const delta = item.delta;
+          const percent = item.percent;
           const step = item.step;
           const row = document.createElement("div");
           row.className = "delta-item";
-          row.innerHTML = `<span>${item.label}</span><span>+${step} → ${delta >= 0 ? "+" : ""}${delta}</span>`;
+          const sign = percent >= 0 ? "+" : "";
+          row.innerHTML = `<span>${item.label}</span><span>+${step} → ${sign}${percent.toFixed(4)}%</span>`;
           container.appendChild(row);
         });
       }
