@@ -119,81 +119,82 @@ class CombatPower:
 combat_power = 0
 damage_output = 0
 
-## user inputs
-# attributes
-main_base = 5635
-main_skill = 448
-main_percent = 5.23
-main_notper = 27465
+if __name__ == '__main__':
+    ## user inputs
+    # attributes
+    main_base = 5635
+    main_skill = 448
+    main_percent = 5.23
+    main_notper = 27465
 
-sub_base = 2991
-sub_skill = 144
-sub_percent = 0.72
-sub_notper = 540
+    sub_base = 2991
+    sub_skill = 144
+    sub_percent = 0.72
+    sub_notper = 540
 
-# attack
-attack_base = 3740
-attack_skill = 190
-empress_blessing = 30
-weapon_fix = -109
-attack_percet = 1.39
-attack_notper = 0
+    # attack
+    attack_base = 3740
+    attack_skill = 190
+    empress_blessing = 30
+    weapon_fix = -109
+    attack_percet = 1.39
+    attack_notper = 0
 
-# damage
-dmg = 1.41
-dmg_skill = 0.7
-bossdmg = 4.63
-bossdmg_skill = 0.63
-cridmg = 1.126
-cridmg_skill = 0.17
-final_damage = 0.54
+    # damage
+    dmg = 1.41
+    dmg_skill = 0.7
+    bossdmg = 4.63
+    bossdmg_skill = 0.63
+    cridmg = 1.126
+    cridmg_skill = 0.17
+    final_damage = 0.54
 
-# genesis weapon
-gwp_fd = 0.1
+    # genesis weapon
+    gwp_fd = 0.1
 
-# monster 
-mst_fd = 0
+    # monster 
+    mst_fd = 0
 
-# combat power
-cp = 293820984
+    # combat power
+    cp = 293820984
 
-damage = Damage(dmg, dmg_skill, bossdmg, bossdmg_skill, cridmg, cridmg_skill, final_damage)
-attribute = Attribute(main_base, main_skill, main_percent, main_notper,
+    damage = Damage(dmg, dmg_skill, bossdmg, bossdmg_skill, cridmg, cridmg_skill, final_damage)
+    attribute = Attribute(main_base, main_skill, main_percent, main_notper,
                       sub_base, sub_skill, sub_percent, sub_notper)
-attack = Attack(attack_base, attack_skill, empress_blessing, weapon_fix, attack_percet, attack_notper)
-combat_power = CombatPower(attribute, attack, damage, gwp_fd, mst_fd)
+    attack = Attack(attack_base, attack_skill, empress_blessing, weapon_fix, attack_percet, attack_notper)
+    combat_power = CombatPower(attribute, attack, damage, gwp_fd, mst_fd)
 
-# Output
-# weapon_fix = combat_power.calculate_weapon_fix(cp)
-# print(f"计算得到的 weapon_fix 为: {weapon_fix}" )
+    # Output
+    # weapon_fix = combat_power.calculate_weapon_fix(cp)
+    # print(f"计算得到的 weapon_fix 为: {weapon_fix}" )
 
-# 计算战斗力
-print(attribute.calculate())
-print(attack.calculate())
-print(damage.calculate())
-print("战斗力：", combat_power.calculate_combat_power())
-print("面板：", combat_power.calculate_mianban())
-print("伤害输出：", combat_power.calculate_damage_output())
+    # 计算战斗力
+    print(attribute.calculate())
+    print(attack.calculate())
+    print(damage.calculate())
+    print("战斗力：", combat_power.calculate_combat_power())
+    print("面板：", combat_power.calculate_mianban())
+    print("伤害输出：", combat_power.calculate_damage_output())
 
-# 属性对比
-attribute = Attribute(main_base, main_skill, main_percent, main_notper,
+    # 属性对比
+    attribute = Attribute(main_base, main_skill, main_percent, main_notper,
                       sub_base, sub_skill, sub_percent, sub_notper)
-attribute2 = Attribute(main_base, main_skill, main_percent, main_notper+1000,
+    attribute2 = Attribute(main_base, main_skill, main_percent, main_notper+1000,
                       sub_base, sub_skill, sub_percent, sub_notper)
 
-print("属性对比：", attribute.compare(attribute2))
+    print("属性对比：", attribute.compare(attribute2))
 
-print(((4 * 63571 + 5684) - (4 * 62571 + 5684)) / (4 * 62571 + 5684))
+    print(((4 * 63571 + 5684) - (4 * 62571 + 5684)) / (4 * 62571 + 5684))
 
-# 攻击对比
-attack = Attack(attack_base, attack_skill, empress_blessing, weapon_fix, attack_percet, attack_notper)
-attack2 = Attack(attack_base+100, attack_skill, empress_blessing, weapon_fix, attack_percet, attack_notper)
+    # 攻击对比
+    attack = Attack(attack_base, attack_skill, empress_blessing, weapon_fix, attack_percet, attack_notper)
+    attack2 = Attack(attack_base+100, attack_skill, empress_blessing, weapon_fix, attack_percet, attack_notper)
 
-print("攻击对比：", attack.compare(attack2))
+    print("攻击对比：", attack.compare(attack2))
 
-print((math.floor(3840 * ( 1 + 1.39)) - math.floor(3740 * (1 + 1.39))) / math.floor(3740 * (1 + 1.39)))
+    print((math.floor(3840 * ( 1 + 1.39)) - math.floor(3740 * (1 + 1.39))) / math.floor(3740 * (1 + 1.39)))
 
-print(attack_base)
+    print(attack_base)
 
 
 

@@ -371,136 +371,67 @@
         return Number.isFinite(value) ? value : 0;
       }
 
+      function numOrNull(id) {
+        const raw = document.getElementById(id).value;
+        if (raw === "" || raw === null || raw === undefined) {
+          return null;
+        }
+        const value = parseFloat(raw);
+        return Number.isFinite(value) ? value : null;
+      }
+
       function readValues() {
         const values = {};
         ids.forEach((id) => {
-          values[id] = num(id);
+          values[id] = id === "weapon_fix" ? numOrNull(id) : num(id);
         });
         return values;
       }
 
-      function calcAttribute(v) {
-        const mainValue = Math.floor((v.main_base - v.main_skill) * (1 + v.main_percent)) + v.main_notper;
-        const subValue = Math.floor((v.sub_base - v.sub_skill) * (1 + v.sub_percent)) + v.sub_notper;
-        return (mainValue * 4 + subValue) / 100;
-      }
-
-      function calcAttributeDamageOutput(v) {
-        const mainAttr = Math.floor(v.main_base * (1 + v.main_percent) + v.main_notper);
-        const subAttr = Math.floor(v.sub_base * (1 + v.sub_percent) + v.sub_notper);
-        return (4 * mainAttr + subAttr) / 100;
-      }
-
-      function calcAttack(v) {
-        if (!Number.isFinite(v.weapon_fix)) {
-          return null;
-        }
-        return Math.floor((v.attack_base - v.attack_skill + v.empress_blessing + v.weapon_fix) * (1 + v.attack_percet));
-      }
-
-      function calcAttackDamageOutput(v) {
-        return Math.floor((v.attack_base - v.attack_notper) * (1 + v.attack_percet) + v.attack_notper);
-      }
-
-      function calcDamage(v) {
-        const damageMultiplier = (1 + v.dmg - v.dmg_skill + v.bossdmg - v.bossdmg_skill);
-        const critMultiplier = (1.35 + v.cridmg - v.cridmg_skill);
-        return damageMultiplier * critMultiplier;
-      }
-
-      function calcCombatPower(v) {
-        const attack = calcAttack(v);
-        if (attack === null) {
-          return null;
-        }
-        const total = calcAttribute(v) * attack * calcDamage(v) * (1 + v.gwp_fd) * (1 + v.mst_fd);
-        return Math.round(total);
-      }
-
-      function calcWeaponFixFromCP(v, targetCp) {
-        const totalAttribute = calcAttribute(v);
-        const damageMultiplier = calcDamage(v);
-        const baseAttack = targetCp / (totalAttribute * damageMultiplier * (1 + v.gwp_fd) * (1 + v.mst_fd));
-        const weaponFix = baseAttack / (1 + v.attack_percet) - v.attack_base + v.attack_skill - v.empress_blessing;
-        return weaponFix;
-      }
-
-      function calcPanel(v) {
-        const weaponRate = 1.2;
-        const damage = (1 + v.dmg) * (1 + v.final_damage);
-        return Math.round(calcAttributeDamageOutput(v) * weaponRate * calcAttackDamageOutput(v) * damage);
-      }
-
-      function calcDamageOutput(v) {
-        const weaponRate = 1.2;
-        const finalDamage = (1 + v.final_damage);
-        const damage = (1 + v.dmg + v.bossdmg);
-        const cridmg = (1 + v.cridmg);
-        return Math.round(calcAttributeDamageOutput(v) * weaponRate * calcAttackDamageOutput(v) * finalDamage * damage * cridmg);
-      }
-
-      const deltaFields = [
-        ["main_base", "主属性基础值"],
-        ["main_skill", "主属性技能"],
-        ["main_percent", "主属性%"],
-        ["main_notper", "主属性非%加成"],
-        ["sub_base", "副属性基础值"],
-        ["sub_skill", "副属性技能"],
-        ["sub_percent", "副属性%"],
-        ["sub_notper", "副属性非%加成"],
-        ["attack_base", "攻击力基础值"],
-        ["attack_skill", "攻击力技能"],
-        ["empress_blessing", "皇后祝福"],
-        ["weapon_fix", "weapon_fix"],
-        ["attack_percet", "攻击力%"],
-        ["attack_notper", "攻击力非%加成"],
-        ["dmg", "伤害%"],
-        ["dmg_skill", "伤害技能%"],
-        ["bossdmg", "Boss伤%"],
-        ["bossdmg_skill", "Boss伤技能%"],
-        ["cridmg", "暴伤%"],
-        ["cridmg_skill", "暴伤技能%"],
-        ["final_damage", "最终伤害%"],
-        ["gwp_fd", "创世武器最终伤害"],
-        ["mst_fd", "怪物最终伤害"]
-      ];
-
-      function renderDeltaList(baseValues) {
+      function renderDeltaList(deltaItems) {
         const container = document.getElementById("delta_list");
-        const step = baseValues.delta_step || 1;
-        const baseOutput = calcDamageOutput(baseValues);
         container.innerHTML = "";
-        deltaFields.forEach(([key, label]) => {
-          const nextValues = { ...baseValues, [key]: baseValues[key] + step };
-          const nextOutput = calcDamageOutput(nextValues);
-          const delta = nextOutput - baseOutput;
-          const item = document.createElement("div");
-          item.className = "delta-item";
-          item.innerHTML = `<span>${label}</span><span>+${step} → ${delta >= 0 ? "+" : ""}${delta}</span>`;
-          container.appendChild(item);
+        deltaItems.forEach((item) => {
+          const delta = item.delta;
+          const step = item.step;
+          const row = document.createElement("div");
+          row.className = "delta-item";
+          row.innerHTML = `<span>${item.label}</span><span>+${step} → ${delta >= 0 ? "+" : ""}${delta}</span>`;
+          container.appendChild(row);
         });
       }
 
-      function calculateAll() {
+      async function calculateAll() {
         const values = readValues();
         const warning = document.getElementById("warning");
         warning.textContent = "";
 
-        const combatPower = calcCombatPower(values);
-        if (combatPower === null) {
-          warning.textContent = "weapon_fix 为空时无法计算战斗力，但面板和输出仍可计算。";
-          document.getElementById("combat_power").textContent = "-";
-        } else {
-          document.getElementById("combat_power").textContent = combatPower.toLocaleString("en-US");
+        try {
+          const response = await fetch("/api/calc", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(values)
+          });
+          const data = await response.json();
+          if (!response.ok) {
+            throw new Error(data.detail || "计算失败");
+          }
+
+          document.getElementById("combat_power").textContent =
+            data.combat_power === null ? "-" : data.combat_power.toLocaleString("en-US");
+          document.getElementById("panel_output").textContent = data.panel.toLocaleString("en-US");
+          document.getElementById("damage_output").textContent = data.damage_output.toLocaleString("en-US");
+
+          if (data.warning) {
+            warning.textContent = data.warning;
+          }
+          renderDeltaList(data.delta_items || []);
+        } catch (err) {
+          warning.textContent = err.message || "计算失败";
         }
-
-        document.getElementById("panel_output").textContent = calcPanel(values).toLocaleString("en-US");
-        document.getElementById("damage_output").textContent = calcDamageOutput(values).toLocaleString("en-US");
-
-        renderDeltaList(values);
       }
 
-      document.getElementById("calc_weapon_fix").addEventListener("click", () => {
+      document.getElementById("calc_weapon_fix").addEventListener("click", async () => {
         const values = readValues();
         const knownCp = parseFloat(document.getElementById("known_cp").value);
         const note = document.getElementById("weapon_fix_note");
@@ -508,10 +439,23 @@
           note.textContent = "请输入有效的 CP 值。";
           return;
         }
-        const weaponFix = calcWeaponFixFromCP(values, knownCp);
-        document.getElementById("weapon_fix").value = weaponFix.toFixed(2);
-        note.textContent = `已推导 weapon_fix = ${weaponFix.toFixed(2)}`;
-        calculateAll();
+
+        try {
+          const response = await fetch("/api/weapon-fix", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ ...values, known_cp: knownCp })
+          });
+          const data = await response.json();
+          if (!response.ok) {
+            throw new Error(data.detail || "推导失败");
+          }
+          document.getElementById("weapon_fix").value = data.weapon_fix.toFixed(2);
+          note.textContent = `已推导 weapon_fix = ${data.weapon_fix.toFixed(2)}`;
+          calculateAll();
+        } catch (err) {
+          note.textContent = err.message || "推导失败";
+        }
       });
 
       document.getElementById("calculate").addEventListener("click", calculateAll);
@@ -525,7 +469,9 @@
       });
 
       document.querySelectorAll("input[type='number']").forEach((input) => {
-        input.addEventListener("input", calculateAll);
+        input.addEventListener("input", () => {
+          calculateAll();
+        });
       });
 
       calculateAll();
