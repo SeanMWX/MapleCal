@@ -84,6 +84,44 @@
         font-size: 18px;
       }
 
+      .hint {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 18px;
+        height: 18px;
+        margin-left: 6px;
+        border-radius: 50%;
+        font-size: 12px;
+        font-weight: 600;
+        color: #fff;
+        background: var(--accent-2);
+        cursor: default;
+        position: relative;
+      }
+
+      .hint::after {
+        content: attr(data-tip);
+        position: absolute;
+        left: 50%;
+        bottom: 130%;
+        transform: translateX(-50%);
+        background: #2b2a28;
+        color: #fff;
+        padding: 8px 10px;
+        border-radius: 8px;
+        font-size: 12px;
+        white-space: nowrap;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 120ms ease;
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+      }
+
+      .hint:hover::after {
+        opacity: 1;
+      }
+
       label {
         display: grid;
         gap: 6px;
@@ -373,19 +411,19 @@
 
       <div class="grid grid-3" style="margin-top: 16px">
         <section class="card">
-          <h2>战斗力</h2>
+          <h2>战斗力 <span class="hint" data-tip="战斗力 = 属性 * 攻击 * 伤害 * (1+创世武器最终伤害) * (1+怪怪卡最终伤害)">?</span></h2>
           <div class="result" id="combat_power">-</div>
-          <div class="note">基于 Attribute.calculate + Attack.calculate + Damage.calculate。</div>
+          <div class="note">新面板。</div>
         </section>
         <section class="card">
           <h2>面板</h2>
           <div class="result" id="panel_output">-</div>
-          <div class="note">使用 calculate_mianban 公式。</div>
+          <div class="note">旧面板。</div>
         </section>
         <section class="card">
           <h2>输出</h2>
           <div class="result" id="damage_output">-</div>
-          <div class="note">使用 calculate_damage_output（旧公式）。</div>
+          <div class="note">输出伤害（计算包括P2，但是不包括攻击技能本身的%）。</div>
         </section>
       </div>
 
@@ -423,6 +461,7 @@
 
       <footer>
         公式来源：calculator.py。若你需要改公式或增加模块，告诉我。
+        <div><a href="/compare">打开双栏对比页面</a></div>
       </footer>
     </div>
 

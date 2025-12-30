@@ -21,6 +21,7 @@ app = FastAPI()
 
 BASE_DIR = Path(__file__).resolve().parent
 INDEX_FILE = BASE_DIR / "index.html"
+COMPARE_FILE = BASE_DIR / "compare.html"
 
 
 class CalcInput(BaseModel):
@@ -162,6 +163,11 @@ def normalize_percent(data: CalcInput) -> CalcInput:
 @app.get("/", response_class=HTMLResponse)
 def home() -> HTMLResponse:
     return HTMLResponse(INDEX_FILE.read_text(encoding="utf-8"))
+
+
+@app.get("/compare", response_class=HTMLResponse)
+def compare_page() -> HTMLResponse:
+    return HTMLResponse(COMPARE_FILE.read_text(encoding="utf-8"))
 
 
 @app.post("/api/calc")
