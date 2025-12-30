@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import Dict, List, Optional
 
 from fastapi import FastAPI
+from fastapi.staticfiles import StaticFiles
 from fastapi.responses import HTMLResponse
 from pydantic import BaseModel
 
@@ -22,6 +23,8 @@ app = FastAPI()
 BASE_DIR = Path(__file__).resolve().parent
 INDEX_FILE = BASE_DIR / "index.html"
 COMPARE_FILE = BASE_DIR / "compare.html"
+
+app.mount("/assests", StaticFiles(directory=BASE_DIR / "assests"), name="assests")
 
 
 class CalcInput(BaseModel):
@@ -51,6 +54,7 @@ class CalcInput(BaseModel):
     ign: float
     p2: float
     boss_def: float
+    weapon_rate: float
     delta_step: float = 1.0
 
 
@@ -177,7 +181,7 @@ def api_calc(data: CalcInput) -> Dict[str, object]:
     attack = build_attack(normalized)
     damage = build_damage(normalized)
     ign_obj = IGN(normalized.ign, normalized.p2)
-    combat = CombatPower(attribute, attack, damage, ign_obj, normalized.gwp_fd, normalized.mst_fd)
+    combat = CombatPower(attribute, attack, damage, ign_obj, normalized.gwp_fd, normalized.mst_fd, data.weapon_rate)
 
     combat_power = None
     warning = None
@@ -199,7 +203,7 @@ def api_calc(data: CalcInput) -> Dict[str, object]:
         normalized.attack_base, normalized.attack_skill, normalized.empress_blessing, normalized.weapon_fix, normalized.attack_percet, normalized.attack_notper,
         normalized.dmg, normalized.dmg_skill, normalized.bossdmg, normalized.bossdmg_skill, normalized.cridmg, normalized.cridmg_skill, normalized.final_damage,
         normalized.ign, normalized.p2, normalized.boss_def,
-        normalized.gwp_fd, normalized.mst_fd,
+        normalized.gwp_fd, normalized.mst_fd, data.weapon_rate,
         step=step,
     )
     delta_items = []
@@ -232,7 +236,7 @@ def api_equivalent(data: CalcInput, base_field: str) -> Dict[str, object]:
         normalized.attack_base, normalized.attack_skill, normalized.empress_blessing, normalized.weapon_fix, normalized.attack_percet, normalized.attack_notper,
         normalized.dmg, normalized.dmg_skill, normalized.bossdmg, normalized.bossdmg_skill, normalized.cridmg, normalized.cridmg_skill, normalized.final_damage,
         normalized.ign, normalized.p2, normalized.boss_def,
-        normalized.gwp_fd, normalized.mst_fd,
+        normalized.gwp_fd, normalized.mst_fd, data.weapon_rate,
         base_field=base_field,
         step=1.0,
     )
@@ -260,6 +264,6 @@ def api_weapon_fix(data: WeaponFixInput) -> Dict[str, float]:
     damage = build_damage(normalized)
     attack = build_attack(normalized, weapon_fix=None)
     ign_obj = IGN(normalized.ign, normalized.p2)
-    combat = CombatPower(attribute, attack, damage, ign_obj, normalized.gwp_fd, normalized.mst_fd)
+    combat = CombatPower(attribute, attack, damage, ign_obj, normalized.gwp_fd, normalized.mst_fd, data.weapon_rate)
     weapon_fix = combat.calculate_weapon_fix(data.known_cp)
     return {"weapon_fix": weapon_fix}
