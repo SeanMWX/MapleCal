@@ -129,7 +129,6 @@ def equivalent_fields() -> List[Dict[str, str]]:
         {"key": "bossdmg", "label": "Boss伤%"},
         {"key": "cridmg", "label": "暴伤%"},
         {"key": "final_damage", "label": "最终伤害%"},
-        {"key": "gwp_fd", "label": "创世武器最终伤害%"},
         {"key": "mst_fd", "label": "怪怪卡最终伤害%"},
         {"key": "ign", "label": "无视防御%"},
         {"key": "p2", "label": "全属性防御穿透%"},
