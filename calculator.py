@@ -50,7 +50,7 @@ class Attack:
         return total_attack
     
     def calculate_damage_output(self):
-        attack = math.floor((self.attack_base - self.attack_notper) * (1 + self.attack_percet) + self.attack_notper)
+        attack = math.floor((self.attack_base) * (1 + self.attack_percet) + self.attack_notper)
         return attack
     
     def compare(self, another: Attack):
@@ -73,11 +73,22 @@ class Damage:
         crit_multiplier = (1.35 + self.cridmg - self.cridmg_skill)
         return damage_multiplier * crit_multiplier
     
+class IGN:
+    def __init__(self, ign, p2):
+        self.ign = ign
+        self.p2 = p2
+
+    def calculate_damage_out(self, boss_def):
+        if 1 - boss_def * (1 - self.ign) < 0:
+            return 0.00000000000000000000000000000000001
+        return (1 - boss_def * (1 - self.ign)) * (1 - 0.5 * (1 - self.p2))
+    
 class CombatPower:
-    def __init__(self, attribute, attack, damage, gwp_fd, mst_fd):
+    def __init__(self, attribute, attack, damage, ign, gwp_fd, mst_fd):
         self.attribute = attribute
         self.attack = attack
         self.damage = damage
+        self.ign = ign
         self.gwp_fd = gwp_fd
         self.mst_fd = mst_fd
 
@@ -104,15 +115,15 @@ class CombatPower:
         return round(self.attribute.calculate_damage_output() * weapon_rate * self.attack.calculate_damage_output() * damage)
 
     # deprecated
-    def calculate_damage_output(self):
+    def calculate_damage_output(self, boss_def):
         weapon_rate = 1.2
         final_damage = (1 + self.damage.final_damage)
         damage = (1 + self.damage.dmg + self.damage.bossdmg)
         cridmg = (1 + self.damage.cridmg)
         skilldmg = 0
-        igndef = 0
 
-        return round(self.attribute.calculate_damage_output() * weapon_rate * self.attack.calculate_damage_output() * final_damage * damage * cridmg)
+        return round(self.attribute.calculate_damage_output() * weapon_rate * self.attack.calculate_damage_output() * final_damage * damage * cridmg) * self.ign.calculate_damage_out(boss_def)
+
 
 
 def calculate_damage_output_value(
@@ -120,14 +131,16 @@ def calculate_damage_output_value(
     sub_base, sub_skill, sub_percent, sub_notper,
     attack_base, attack_skill, empress_blessing, weapon_fix, attack_percet, attack_notper,
     dmg, dmg_skill, bossdmg, bossdmg_skill, cridmg, cridmg_skill, final_damage,
+    ign, p2, boss_def,
     gwp_fd, mst_fd
 ):
     damage = Damage(dmg, dmg_skill, bossdmg, bossdmg_skill, cridmg, cridmg_skill, final_damage)
     attribute = Attribute(main_base, main_skill, main_percent, main_notper,
                           sub_base, sub_skill, sub_percent, sub_notper)
     attack = Attack(attack_base, attack_skill, empress_blessing, weapon_fix, attack_percet, attack_notper)
-    combat = CombatPower(attribute, attack, damage, gwp_fd, mst_fd)
-    return combat.calculate_damage_output()
+    ign_obj = IGN(ign, p2)
+    combat = CombatPower(attribute, attack, damage, ign_obj, gwp_fd, mst_fd)
+    return combat.calculate_damage_output(boss_def)
 
 
 def calculate_damage_output_percent_increase(
@@ -135,11 +148,13 @@ def calculate_damage_output_percent_increase(
     sub_base, sub_skill, sub_percent, sub_notper,
     attack_base, attack_skill, empress_blessing, weapon_fix, attack_percet, attack_notper,
     dmg, dmg_skill, bossdmg, bossdmg_skill, cridmg, cridmg_skill, final_damage,
+    ign, p2, boss_def,
     gwp_fd, mst_fd,
     step=1.0
 ):
     if step <= 0:
         step = 1.0
+    step_percent = step / 100
     if weapon_fix is None:
         weapon_fix = 0
     base_output = calculate_damage_output_value(
@@ -147,6 +162,7 @@ def calculate_damage_output_percent_increase(
         sub_base, sub_skill, sub_percent, sub_notper,
         attack_base, attack_skill, empress_blessing, weapon_fix, attack_percet, attack_notper,
         dmg, dmg_skill, bossdmg, bossdmg_skill, cridmg, cridmg_skill, final_damage,
+        ign, p2, boss_def,
         gwp_fd, mst_fd
     )
 
@@ -160,6 +176,7 @@ def calculate_damage_output_percent_increase(
         sub_base, sub_skill, sub_percent, sub_notper,
         attack_base, attack_skill, empress_blessing, weapon_fix, attack_percet, attack_notper,
         dmg, dmg_skill, bossdmg, bossdmg_skill, cridmg, cridmg_skill, final_damage,
+        ign, p2, boss_def,
         gwp_fd, mst_fd
     ))
     results["main_skill"] = pct(calculate_damage_output_value(
@@ -167,13 +184,15 @@ def calculate_damage_output_percent_increase(
         sub_base, sub_skill, sub_percent, sub_notper,
         attack_base, attack_skill, empress_blessing, weapon_fix, attack_percet, attack_notper,
         dmg, dmg_skill, bossdmg, bossdmg_skill, cridmg, cridmg_skill, final_damage,
+        ign, p2, boss_def,
         gwp_fd, mst_fd
     ))
     results["main_percent"] = pct(calculate_damage_output_value(
-        main_base, main_skill, main_percent + step, main_notper,
+        main_base, main_skill, main_percent + step_percent, main_notper,
         sub_base, sub_skill, sub_percent, sub_notper,
         attack_base, attack_skill, empress_blessing, weapon_fix, attack_percet, attack_notper,
         dmg, dmg_skill, bossdmg, bossdmg_skill, cridmg, cridmg_skill, final_damage,
+        ign, p2, boss_def,
         gwp_fd, mst_fd
     ))
     results["main_notper"] = pct(calculate_damage_output_value(
@@ -181,6 +200,7 @@ def calculate_damage_output_percent_increase(
         sub_base, sub_skill, sub_percent, sub_notper,
         attack_base, attack_skill, empress_blessing, weapon_fix, attack_percet, attack_notper,
         dmg, dmg_skill, bossdmg, bossdmg_skill, cridmg, cridmg_skill, final_damage,
+        ign, p2, boss_def,
         gwp_fd, mst_fd
     ))
     results["sub_base"] = pct(calculate_damage_output_value(
@@ -188,6 +208,7 @@ def calculate_damage_output_percent_increase(
         sub_base + step, sub_skill, sub_percent, sub_notper,
         attack_base, attack_skill, empress_blessing, weapon_fix, attack_percet, attack_notper,
         dmg, dmg_skill, bossdmg, bossdmg_skill, cridmg, cridmg_skill, final_damage,
+        ign, p2, boss_def,
         gwp_fd, mst_fd
     ))
     results["sub_skill"] = pct(calculate_damage_output_value(
@@ -195,13 +216,15 @@ def calculate_damage_output_percent_increase(
         sub_base, sub_skill + step, sub_percent, sub_notper,
         attack_base, attack_skill, empress_blessing, weapon_fix, attack_percet, attack_notper,
         dmg, dmg_skill, bossdmg, bossdmg_skill, cridmg, cridmg_skill, final_damage,
+        ign, p2, boss_def,
         gwp_fd, mst_fd
     ))
     results["sub_percent"] = pct(calculate_damage_output_value(
         main_base, main_skill, main_percent, main_notper,
-        sub_base, sub_skill, sub_percent + step, sub_notper,
+        sub_base, sub_skill, sub_percent + step_percent, sub_notper,
         attack_base, attack_skill, empress_blessing, weapon_fix, attack_percet, attack_notper,
         dmg, dmg_skill, bossdmg, bossdmg_skill, cridmg, cridmg_skill, final_damage,
+        ign, p2, boss_def,
         gwp_fd, mst_fd
     ))
     results["sub_notper"] = pct(calculate_damage_output_value(
@@ -209,6 +232,7 @@ def calculate_damage_output_percent_increase(
         sub_base, sub_skill, sub_percent, sub_notper + step,
         attack_base, attack_skill, empress_blessing, weapon_fix, attack_percet, attack_notper,
         dmg, dmg_skill, bossdmg, bossdmg_skill, cridmg, cridmg_skill, final_damage,
+        ign, p2, boss_def,
         gwp_fd, mst_fd
     ))
     results["attack_base"] = pct(calculate_damage_output_value(
@@ -216,6 +240,7 @@ def calculate_damage_output_percent_increase(
         sub_base, sub_skill, sub_percent, sub_notper,
         attack_base + step, attack_skill, empress_blessing, weapon_fix, attack_percet, attack_notper,
         dmg, dmg_skill, bossdmg, bossdmg_skill, cridmg, cridmg_skill, final_damage,
+        ign, p2, boss_def,
         gwp_fd, mst_fd
     ))
     results["attack_skill"] = pct(calculate_damage_output_value(
@@ -223,6 +248,7 @@ def calculate_damage_output_percent_increase(
         sub_base, sub_skill, sub_percent, sub_notper,
         attack_base, attack_skill + step, empress_blessing, weapon_fix, attack_percet, attack_notper,
         dmg, dmg_skill, bossdmg, bossdmg_skill, cridmg, cridmg_skill, final_damage,
+        ign, p2, boss_def,
         gwp_fd, mst_fd
     ))
     results["empress_blessing"] = pct(calculate_damage_output_value(
@@ -230,6 +256,7 @@ def calculate_damage_output_percent_increase(
         sub_base, sub_skill, sub_percent, sub_notper,
         attack_base, attack_skill, empress_blessing + step, weapon_fix, attack_percet, attack_notper,
         dmg, dmg_skill, bossdmg, bossdmg_skill, cridmg, cridmg_skill, final_damage,
+        ign, p2, boss_def,
         gwp_fd, mst_fd
     ))
     results["weapon_fix"] = pct(calculate_damage_output_value(
@@ -237,13 +264,15 @@ def calculate_damage_output_percent_increase(
         sub_base, sub_skill, sub_percent, sub_notper,
         attack_base, attack_skill, empress_blessing, weapon_fix + step, attack_percet, attack_notper,
         dmg, dmg_skill, bossdmg, bossdmg_skill, cridmg, cridmg_skill, final_damage,
+        ign, p2, boss_def,
         gwp_fd, mst_fd
     ))
     results["attack_percet"] = pct(calculate_damage_output_value(
         main_base, main_skill, main_percent, main_notper,
         sub_base, sub_skill, sub_percent, sub_notper,
-        attack_base, attack_skill, empress_blessing, weapon_fix, attack_percet + step, attack_notper,
+        attack_base, attack_skill, empress_blessing, weapon_fix, attack_percet + step_percent, attack_notper,
         dmg, dmg_skill, bossdmg, bossdmg_skill, cridmg, cridmg_skill, final_damage,
+        ign, p2, boss_def,
         gwp_fd, mst_fd
     ))
     results["attack_notper"] = pct(calculate_damage_output_value(
@@ -251,55 +280,63 @@ def calculate_damage_output_percent_increase(
         sub_base, sub_skill, sub_percent, sub_notper,
         attack_base, attack_skill, empress_blessing, weapon_fix, attack_percet, attack_notper + step,
         dmg, dmg_skill, bossdmg, bossdmg_skill, cridmg, cridmg_skill, final_damage,
+        ign, p2, boss_def,
         gwp_fd, mst_fd
     ))
     results["dmg"] = pct(calculate_damage_output_value(
         main_base, main_skill, main_percent, main_notper,
         sub_base, sub_skill, sub_percent, sub_notper,
         attack_base, attack_skill, empress_blessing, weapon_fix, attack_percet, attack_notper,
-        dmg + step, dmg_skill, bossdmg, bossdmg_skill, cridmg, cridmg_skill, final_damage,
+        dmg + step_percent, dmg_skill, bossdmg, bossdmg_skill, cridmg, cridmg_skill, final_damage,
+        ign, p2, boss_def,
         gwp_fd, mst_fd
     ))
     results["dmg_skill"] = pct(calculate_damage_output_value(
         main_base, main_skill, main_percent, main_notper,
         sub_base, sub_skill, sub_percent, sub_notper,
         attack_base, attack_skill, empress_blessing, weapon_fix, attack_percet, attack_notper,
-        dmg, dmg_skill + step, bossdmg, bossdmg_skill, cridmg, cridmg_skill, final_damage,
+        dmg, dmg_skill + step_percent, bossdmg, bossdmg_skill, cridmg, cridmg_skill, final_damage,
+        ign, p2, boss_def,
         gwp_fd, mst_fd
     ))
     results["bossdmg"] = pct(calculate_damage_output_value(
         main_base, main_skill, main_percent, main_notper,
         sub_base, sub_skill, sub_percent, sub_notper,
         attack_base, attack_skill, empress_blessing, weapon_fix, attack_percet, attack_notper,
-        dmg, dmg_skill, bossdmg + step, bossdmg_skill, cridmg, cridmg_skill, final_damage,
+        dmg, dmg_skill, bossdmg + step_percent, bossdmg_skill, cridmg, cridmg_skill, final_damage,
+        ign, p2, boss_def,
         gwp_fd, mst_fd
     ))
     results["bossdmg_skill"] = pct(calculate_damage_output_value(
         main_base, main_skill, main_percent, main_notper,
         sub_base, sub_skill, sub_percent, sub_notper,
         attack_base, attack_skill, empress_blessing, weapon_fix, attack_percet, attack_notper,
-        dmg, dmg_skill, bossdmg, bossdmg_skill + step, cridmg, cridmg_skill, final_damage,
+        dmg, dmg_skill, bossdmg, bossdmg_skill + step_percent, cridmg, cridmg_skill, final_damage,
+        ign, p2, boss_def,
         gwp_fd, mst_fd
     ))
     results["cridmg"] = pct(calculate_damage_output_value(
         main_base, main_skill, main_percent, main_notper,
         sub_base, sub_skill, sub_percent, sub_notper,
         attack_base, attack_skill, empress_blessing, weapon_fix, attack_percet, attack_notper,
-        dmg, dmg_skill, bossdmg, bossdmg_skill, cridmg + step, cridmg_skill, final_damage,
+        dmg, dmg_skill, bossdmg, bossdmg_skill, cridmg + step_percent, cridmg_skill, final_damage,
+        ign, p2, boss_def,
         gwp_fd, mst_fd
     ))
     results["cridmg_skill"] = pct(calculate_damage_output_value(
         main_base, main_skill, main_percent, main_notper,
         sub_base, sub_skill, sub_percent, sub_notper,
         attack_base, attack_skill, empress_blessing, weapon_fix, attack_percet, attack_notper,
-        dmg, dmg_skill, bossdmg, bossdmg_skill, cridmg, cridmg_skill + step, final_damage,
+        dmg, dmg_skill, bossdmg, bossdmg_skill, cridmg, cridmg_skill + step_percent, final_damage,
+        ign, p2, boss_def,
         gwp_fd, mst_fd
     ))
     results["final_damage"] = pct(calculate_damage_output_value(
         main_base, main_skill, main_percent, main_notper,
         sub_base, sub_skill, sub_percent, sub_notper,
         attack_base, attack_skill, empress_blessing, weapon_fix, attack_percet, attack_notper,
-        dmg, dmg_skill, bossdmg, bossdmg_skill, cridmg, cridmg_skill, final_damage + step,
+        dmg, dmg_skill, bossdmg, bossdmg_skill, cridmg, cridmg_skill, final_damage + step_percent,
+        ign, p2, boss_def,
         gwp_fd, mst_fd
     ))
     results["gwp_fd"] = pct(calculate_damage_output_value(
@@ -307,14 +344,34 @@ def calculate_damage_output_percent_increase(
         sub_base, sub_skill, sub_percent, sub_notper,
         attack_base, attack_skill, empress_blessing, weapon_fix, attack_percet, attack_notper,
         dmg, dmg_skill, bossdmg, bossdmg_skill, cridmg, cridmg_skill, final_damage,
-        gwp_fd + step, mst_fd
+        ign, p2, boss_def,
+        gwp_fd + step_percent, mst_fd
     ))
     results["mst_fd"] = pct(calculate_damage_output_value(
         main_base, main_skill, main_percent, main_notper,
         sub_base, sub_skill, sub_percent, sub_notper,
         attack_base, attack_skill, empress_blessing, weapon_fix, attack_percet, attack_notper,
         dmg, dmg_skill, bossdmg, bossdmg_skill, cridmg, cridmg_skill, final_damage,
-        gwp_fd, mst_fd + step
+        ign, p2, boss_def,
+        gwp_fd, mst_fd + step_percent
+    ))
+    ign_next = 1 - ((1 - ign) * (1 - step_percent))
+    results["ign"] = pct(calculate_damage_output_value(
+        main_base, main_skill, main_percent, main_notper,
+        sub_base, sub_skill, sub_percent, sub_notper,
+        attack_base, attack_skill, empress_blessing, weapon_fix, attack_percet, attack_notper,
+        dmg, dmg_skill, bossdmg, bossdmg_skill, cridmg, cridmg_skill, final_damage,
+        ign_next, p2, boss_def,
+        gwp_fd, mst_fd
+    ))
+    p2_next = 1 - ((1 - p2) * (1 - step_percent))
+    results["p2"] = pct(calculate_damage_output_value(
+        main_base, main_skill, main_percent, main_notper,
+        sub_base, sub_skill, sub_percent, sub_notper,
+        attack_base, attack_skill, empress_blessing, weapon_fix, attack_percet, attack_notper,
+        dmg, dmg_skill, bossdmg, bossdmg_skill, cridmg, cridmg_skill, final_damage,
+        ign, p2_next, boss_def,
+        gwp_fd, mst_fd
     ))
 
     return results
@@ -325,6 +382,7 @@ def calculate_equivalent_increase(
     sub_base, sub_skill, sub_percent, sub_notper,
     attack_base, attack_skill, empress_blessing, weapon_fix, attack_percet, attack_notper,
     dmg, dmg_skill, bossdmg, bossdmg_skill, cridmg, cridmg_skill, final_damage,
+    ign, p2, boss_def,
     gwp_fd, mst_fd,
     base_field,
     step=1.0
@@ -334,6 +392,7 @@ def calculate_equivalent_increase(
         sub_base, sub_skill, sub_percent, sub_notper,
         attack_base, attack_skill, empress_blessing, weapon_fix, attack_percet, attack_notper,
         dmg, dmg_skill, bossdmg, bossdmg_skill, cridmg, cridmg_skill, final_damage,
+        ign, p2, boss_def,
         gwp_fd, mst_fd,
         step=step,
     )
@@ -346,7 +405,7 @@ def calculate_equivalent_increase(
         if value == 0:
             equivalents[key] = None
         else:
-            equivalents[key] = base_percent / value * step
+            equivalents[key] = base_percent / value
     return equivalents
 
 
@@ -384,6 +443,14 @@ if __name__ == '__main__':
     cridmg_skill = 0.17
     final_damage = 0.54
 
+    # ignore defense (percent inputs)
+    ign_percent = 90
+    p2_percent = 10
+    boss_def_percent = 300
+    ign = ign_percent / 100
+    p2 = p2_percent / 100
+    boss_def = boss_def_percent / 100
+
     # genesis weapon
     gwp_fd = 0.1
 
@@ -397,7 +464,8 @@ if __name__ == '__main__':
     attribute = Attribute(main_base, main_skill, main_percent, main_notper,
                       sub_base, sub_skill, sub_percent, sub_notper)
     attack = Attack(attack_base, attack_skill, empress_blessing, weapon_fix, attack_percet, attack_notper)
-    combat_power = CombatPower(attribute, attack, damage, gwp_fd, mst_fd)
+    ign_obj = IGN(ign, p2)
+    combat_power = CombatPower(attribute, attack, damage, ign_obj, gwp_fd, mst_fd)
 
     # Output
     # weapon_fix = combat_power.calculate_weapon_fix(cp)
@@ -407,9 +475,10 @@ if __name__ == '__main__':
     print(attribute.calculate())
     print(attack.calculate())
     print(damage.calculate())
+    print(ign_obj.calculate_damage_out(boss_def))
     print("战斗力：", combat_power.calculate_combat_power())
     print("面板：", combat_power.calculate_mianban())
-    print("伤害输出：", combat_power.calculate_damage_output())
+    print("伤害输出：", combat_power.calculate_damage_output(boss_def))
 
     # 属性对比
     attribute = Attribute(main_base, main_skill, main_percent, main_notper,
@@ -423,14 +492,10 @@ if __name__ == '__main__':
 
     # 攻击对比
     attack = Attack(attack_base, attack_skill, empress_blessing, weapon_fix, attack_percet, attack_notper)
-    attack2 = Attack(attack_base, attack_skill, empress_blessing, weapon_fix, attack_percet+1, attack_notper)
+    attack2 = Attack(attack_base, attack_skill, empress_blessing, weapon_fix, attack_percet, attack_notper+1)
 
     print("攻击对比：", attack.compare(attack2))
 
     print((math.floor(3840 * ( 1 + 2.39)) - math.floor(3740 * (1 + 1.39))) / math.floor(3740 * (1 + 1.39)))
 
     print(attack_base)
-
-
-
-

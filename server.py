@@ -12,6 +12,7 @@ from calculator import (
     Attack,
     CombatPower,
     Damage,
+    IGN,
     calculate_equivalent_increase,
     calculate_damage_output_percent_increase,
 )
@@ -46,6 +47,9 @@ class CalcInput(BaseModel):
     final_damage: float
     gwp_fd: float
     mst_fd: float
+    ign: float
+    p2: float
+    boss_def: float
     delta_step: float = 1.0
 
 
@@ -104,8 +108,56 @@ def delta_fields() -> List[Dict[str, str]]:
         {"key": "bossdmg", "label": "Boss伤%"},
         {"key": "cridmg", "label": "暴伤%"},
         {"key": "final_damage", "label": "最终伤害%"},
-        {"key": "mst_fd", "label": "怪物最终伤害"},
+        {"key": "mst_fd", "label": "怪怪卡最终伤害%"},
+        {"key": "ign", "label": "无视防御%"},
+        {"key": "p2", "label": "全属性防御穿透%"},
     ]
+
+
+def equivalent_fields() -> List[Dict[str, str]]:
+    return [
+        {"key": "main_base", "label": "主属性基础值"},
+        {"key": "main_percent", "label": "主属性%"},
+        {"key": "main_notper", "label": "主属性非%加成"},
+        {"key": "sub_base", "label": "副属性基础值"},
+        {"key": "sub_percent", "label": "副属性%"},
+        {"key": "sub_notper", "label": "副属性非%加成"},
+        {"key": "attack_base", "label": "攻击力基础值"},
+        {"key": "attack_percet", "label": "攻击力%"},
+        {"key": "attack_notper", "label": "攻击力非%加成"},
+        {"key": "dmg", "label": "伤害%"},
+        {"key": "bossdmg", "label": "Boss伤%"},
+        {"key": "cridmg", "label": "暴伤%"},
+        {"key": "final_damage", "label": "最终伤害%"},
+        {"key": "gwp_fd", "label": "创世武器最终伤害%"},
+        {"key": "mst_fd", "label": "怪怪卡最终伤害%"},
+        {"key": "ign", "label": "无视防御%"},
+        {"key": "p2", "label": "全属性防御穿透%"},
+    ]
+
+
+def normalize_percent(data: CalcInput) -> CalcInput:
+    normalized = data.model_copy()
+    percent_fields = [
+        "main_percent",
+        "sub_percent",
+        "attack_percet",
+        "dmg",
+        "dmg_skill",
+        "bossdmg",
+        "bossdmg_skill",
+        "cridmg",
+        "cridmg_skill",
+        "final_damage",
+        "gwp_fd",
+        "mst_fd",
+        "ign",
+        "p2",
+        "boss_def",
+    ]
+    for field in percent_fields:
+        setattr(normalized, field, getattr(normalized, field) / 100)
+    return normalized
 
 
 @app.get("/", response_class=HTMLResponse)
@@ -115,10 +167,12 @@ def home() -> HTMLResponse:
 
 @app.post("/api/calc")
 def api_calc(data: CalcInput) -> Dict[str, object]:
-    attribute = build_attribute(data)
-    attack = build_attack(data)
-    damage = build_damage(data)
-    combat = CombatPower(attribute, attack, damage, data.gwp_fd, data.mst_fd)
+    normalized = normalize_percent(data)
+    attribute = build_attribute(normalized)
+    attack = build_attack(normalized)
+    damage = build_damage(normalized)
+    ign_obj = IGN(normalized.ign, normalized.p2)
+    combat = CombatPower(attribute, attack, damage, ign_obj, normalized.gwp_fd, normalized.mst_fd)
 
     combat_power = None
     warning = None
@@ -131,15 +185,16 @@ def api_calc(data: CalcInput) -> Dict[str, object]:
             warning = str(exc)
 
     panel = combat.calculate_mianban()
-    output = combat.calculate_damage_output()
+    output = combat.calculate_damage_output(normalized.boss_def)
 
     step = data.delta_step if data.delta_step and data.delta_step > 0 else 1.0
     percent_increase = calculate_damage_output_percent_increase(
-        data.main_base, data.main_skill, data.main_percent, data.main_notper,
-        data.sub_base, data.sub_skill, data.sub_percent, data.sub_notper,
-        data.attack_base, data.attack_skill, data.empress_blessing, data.weapon_fix, data.attack_percet, data.attack_notper,
-        data.dmg, data.dmg_skill, data.bossdmg, data.bossdmg_skill, data.cridmg, data.cridmg_skill, data.final_damage,
-        data.gwp_fd, data.mst_fd,
+        normalized.main_base, normalized.main_skill, normalized.main_percent, normalized.main_notper,
+        normalized.sub_base, normalized.sub_skill, normalized.sub_percent, normalized.sub_notper,
+        normalized.attack_base, normalized.attack_skill, normalized.empress_blessing, normalized.weapon_fix, normalized.attack_percet, normalized.attack_notper,
+        normalized.dmg, normalized.dmg_skill, normalized.bossdmg, normalized.bossdmg_skill, normalized.cridmg, normalized.cridmg_skill, normalized.final_damage,
+        normalized.ign, normalized.p2, normalized.boss_def,
+        normalized.gwp_fd, normalized.mst_fd,
         step=step,
     )
     delta_items = []
@@ -165,17 +220,19 @@ def api_calc(data: CalcInput) -> Dict[str, object]:
 
 @app.post("/api/equivalent")
 def api_equivalent(data: CalcInput, base_field: str) -> Dict[str, object]:
+    normalized = normalize_percent(data)
     equivalents = calculate_equivalent_increase(
-        data.main_base, data.main_skill, data.main_percent, data.main_notper,
-        data.sub_base, data.sub_skill, data.sub_percent, data.sub_notper,
-        data.attack_base, data.attack_skill, data.empress_blessing, data.weapon_fix, data.attack_percet, data.attack_notper,
-        data.dmg, data.dmg_skill, data.bossdmg, data.bossdmg_skill, data.cridmg, data.cridmg_skill, data.final_damage,
-        data.gwp_fd, data.mst_fd,
+        normalized.main_base, normalized.main_skill, normalized.main_percent, normalized.main_notper,
+        normalized.sub_base, normalized.sub_skill, normalized.sub_percent, normalized.sub_notper,
+        normalized.attack_base, normalized.attack_skill, normalized.empress_blessing, normalized.weapon_fix, normalized.attack_percet, normalized.attack_notper,
+        normalized.dmg, normalized.dmg_skill, normalized.bossdmg, normalized.bossdmg_skill, normalized.cridmg, normalized.cridmg_skill, normalized.final_damage,
+        normalized.ign, normalized.p2, normalized.boss_def,
+        normalized.gwp_fd, normalized.mst_fd,
         base_field=base_field,
         step=1.0,
     )
     items = []
-    for item in delta_fields():
+    for item in equivalent_fields():
         key = item["key"]
         items.append(
             {
@@ -193,9 +250,10 @@ def api_equivalent(data: CalcInput, base_field: str) -> Dict[str, object]:
 
 @app.post("/api/weapon-fix")
 def api_weapon_fix(data: WeaponFixInput) -> Dict[str, float]:
-    attribute = build_attribute(data)
-    damage = build_damage(data)
-    attack = build_attack(data, weapon_fix=None)
-    combat = CombatPower(attribute, attack, damage, data.gwp_fd, data.mst_fd)
+    normalized = normalize_percent(data)
+    attribute = build_attribute(normalized)
+    damage = build_damage(normalized)
+    attack = build_attack(normalized, weapon_fix=None)
+    combat = CombatPower(attribute, attack, damage, normalized.gwp_fd, normalized.mst_fd)
     weapon_fix = combat.calculate_weapon_fix(data.known_cp)
     return {"weapon_fix": weapon_fix}

@@ -187,26 +187,6 @@
         gap: 10px;
       }
 
-      .equivalent-module {
-        margin-top: 20px;
-      }
-
-      .equivalent-module .note {
-        margin-bottom: 12px;
-      }
-
-      .equivalent-controls {
-        padding: 10px 12px;
-        border-radius: 14px;
-        background: rgba(255, 255, 255, 0.7);
-        border: 1px dashed rgba(0, 0, 0, 0.08);
-        margin-bottom: 12px;
-      }
-
-      .equivalent-controls .toggle-group {
-        gap: 10px;
-      }
-
       .result {
         font-family: "Space Grotesk", "Noto Sans SC", sans-serif;
         font-size: 22px;
@@ -278,8 +258,8 @@
             <label>主属性技能
               <input id="main_skill" type="number" value="448" />
             </label>
-            <label>主属性%
-              <input id="main_percent" type="number" value="5.23" step="0.01" />
+            <label>主属性% (输入百分比)
+              <input id="main_percent" type="number" value="523" step="0.01" />
             </label>
             <label>主属性非%加成
               <input id="main_notper" type="number" value="27465" />
@@ -290,8 +270,8 @@
             <label>副属性技能
               <input id="sub_skill" type="number" value="144" />
             </label>
-            <label>副属性%
-              <input id="sub_percent" type="number" value="0.72" step="0.01" />
+            <label>副属性% (输入百分比)
+              <input id="sub_percent" type="number" value="72" step="0.01" />
             </label>
             <label>副属性非%加成
               <input id="sub_notper" type="number" value="540" />
@@ -314,8 +294,8 @@
             <label>weapon_fix
               <input id="weapon_fix" type="number" value="-109" />
             </label>
-            <label>攻击力%
-              <input id="attack_percet" type="number" value="1.39" step="0.01" />
+            <label>攻击力% (输入百分比)
+              <input id="attack_percet" type="number" value="139" step="0.01" />
             </label>
             <label>攻击力非%加成
               <input id="attack_notper" type="number" value="0" />
@@ -337,26 +317,26 @@
         <section class="card">
           <h2>伤害 (Damage)</h2>
           <div class="grid grid-2">
-            <label>伤害%
-              <input id="dmg" type="number" value="1.41" step="0.01" />
+            <label>伤害% (输入百分比)
+              <input id="dmg" type="number" value="141" step="0.01" />
             </label>
-            <label>伤害技能%
-              <input id="dmg_skill" type="number" value="0.7" step="0.01" />
+            <label>伤害技能% (输入百分比)
+              <input id="dmg_skill" type="number" value="70" step="0.01" />
             </label>
-            <label>Boss伤%
-              <input id="bossdmg" type="number" value="4.63" step="0.01" />
+            <label>Boss伤% (输入百分比)
+              <input id="bossdmg" type="number" value="463" step="0.01" />
             </label>
-            <label>Boss伤技能%
-              <input id="bossdmg_skill" type="number" value="0.63" step="0.01" />
+            <label>Boss伤技能% (输入百分比)
+              <input id="bossdmg_skill" type="number" value="63" step="0.01" />
             </label>
-            <label>暴伤%
-              <input id="cridmg" type="number" value="1.126" step="0.001" />
+            <label>暴伤% (输入百分比)
+              <input id="cridmg" type="number" value="112.6" step="0.01" />
             </label>
-            <label>暴伤技能%
-              <input id="cridmg_skill" type="number" value="0.17" step="0.01" />
+            <label>暴伤技能% (输入百分比)
+              <input id="cridmg_skill" type="number" value="17" step="0.01" />
             </label>
-            <label>最终伤害%
-              <input id="final_damage" type="number" value="0.54" step="0.01" />
+            <label>最终伤害% (输入百分比)
+              <input id="final_damage" type="number" value="54" step="0.01" />
             </label>
           </div>
         </section>
@@ -364,11 +344,20 @@
         <section class="card">
           <h2>其他 (Other)</h2>
           <div class="grid grid-2">
-            <label>创世武器最终伤害 (gwp_fd)
-              <input id="gwp_fd" type="number" value="0.1" step="0.01" />
+            <label>创世武器最终伤害% (gwp_fd)
+              <input id="gwp_fd" type="number" value="10" step="0.01" />
             </label>
-            <label>怪物最终伤害 (mst_fd)
+            <label>怪怪卡最终伤害% (mst_fd)
               <input id="mst_fd" type="number" value="0" step="0.01" />
+            </label>
+            <label>无视防御% (IGN，输入百分比)
+              <input id="ign" type="number" value="90" step="0.01" />
+            </label>
+            <label>全属性防御穿透% (P2，输入百分比)
+              <input id="p2" type="number" value="10" step="0.01" />
+            </label>
+            <label>Boss防御% (boss_def，输入百分比)
+              <input id="boss_def" type="number" value="300" step="0.01" />
             </label>
             <label>输出增量步长
               <input id="delta_step" type="number" value="1" step="0.01" />
@@ -424,7 +413,10 @@
             <button type="button" data-base="bossdmg" class="secondary">Boss伤%</button>
             <button type="button" data-base="cridmg" class="secondary">暴伤%</button>
             <button type="button" data-base="final_damage" class="secondary">最终伤害%</button>
-            <button type="button" data-base="mst_fd" class="secondary">怪物最终伤害</button>
+            <button type="button" data-base="gwp_fd" class="secondary">创世武器最终伤害%</button>
+            <button type="button" data-base="mst_fd" class="secondary">怪怪卡最终伤害%</button>
+            <button type="button" data-base="ign" class="secondary">无视防御%</button>
+            <button type="button" data-base="p2" class="secondary">全属性防御穿透%</button>
           </div>
         </div>
         <div class="delta-list" id="equivalent_list"></div>
@@ -439,27 +431,30 @@
       const defaults = {
         main_base: 5635,
         main_skill: 448,
-        main_percent: 5.23,
+        main_percent: 523,
         main_notper: 27465,
         sub_base: 2991,
         sub_skill: 144,
-        sub_percent: 0.72,
+        sub_percent: 72,
         sub_notper: 540,
         attack_base: 3740,
         attack_skill: 190,
         empress_blessing: 30,
         weapon_fix: -109,
-        attack_percet: 1.39,
+        attack_percet: 139,
         attack_notper: 0,
-        dmg: 1.41,
-        dmg_skill: 0.7,
-        bossdmg: 4.63,
-        bossdmg_skill: 0.63,
-        cridmg: 1.126,
-        cridmg_skill: 0.17,
-        final_damage: 0.54,
-        gwp_fd: 0.1,
+        dmg: 141,
+        dmg_skill: 70,
+        bossdmg: 463,
+        bossdmg_skill: 63,
+        cridmg: 112.6,
+        cridmg_skill: 17,
+        final_damage: 54,
+        gwp_fd: 10,
         mst_fd: 0,
+        ign: 90,
+        p2: 10,
+        boss_def: 300,
         delta_step: 1
       };
 
