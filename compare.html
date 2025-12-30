@@ -260,7 +260,7 @@
         { key: "boss_def", label: "Boss防御% (boss_def，输入百分比)", value: 300 }
       ];
 
-      function renderForm(containerId, prefix) {
+      function renderForm(containerId, prefix, overrides = {}, readOnly = false) {
         const container = document.getElementById(containerId);
         container.innerHTML = "";
         fields.forEach((field) => {
@@ -269,8 +269,12 @@
           const input = document.createElement("input");
           input.type = "number";
           input.id = `${prefix}_${field.key}`;
-          input.value = field.value;
+          input.value = overrides[field.key] ?? field.value;
           input.step = "0.01";
+          if (readOnly || (prefix === "b" && field.key === "boss_def")) {
+            input.disabled = true;
+            input.style.opacity = "0.6";
+          }
           wrapper.appendChild(input);
           container.appendChild(wrapper);
         });
@@ -344,17 +348,39 @@
       document.getElementById("reset").addEventListener("click", () => {
         renderForm("form-a", "a");
         renderForm("form-b", "b");
+        localStorage.removeItem("maplecal_preset_b");
         compare();
       });
 
       document.addEventListener("input", (event) => {
         if (event.target && event.target.matches("input[type='number']")) {
+          if (event.target.id && event.target.id.startsWith("b_")) {
+            savePresetB(readValues("b"));
+          }
           compare();
         }
       });
 
-      renderForm("form-a", "a");
-      renderForm("form-b", "b");
+      function savePresetB(values) {
+        localStorage.setItem("maplecal_preset_b", JSON.stringify(values));
+      }
+
+      function loadPreset(key) {
+        const stored = localStorage.getItem(key);
+        if (!stored) {
+          return {};
+        }
+        try {
+          return JSON.parse(stored);
+        } catch {
+          return {};
+        }
+      }
+
+      const presetA = loadPreset("maplecal_preset");
+      const presetB = loadPreset("maplecal_preset_b");
+      renderForm("form-a", "a", presetA, true);
+      renderForm("form-b", "b", Object.keys(presetB).length ? presetB : presetA, false);
       compare();
     </script>
   </body>

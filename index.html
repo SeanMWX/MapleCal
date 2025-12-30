@@ -82,6 +82,15 @@
       .card h2 {
         margin: 0 0 12px;
         font-size: 18px;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+      }
+
+      .hint-wrap {
+        position: relative;
+        display: inline-flex;
+        align-items: center;
       }
 
       .hint {
@@ -90,36 +99,61 @@
         justify-content: center;
         width: 18px;
         height: 18px;
-        margin-left: 6px;
         border-radius: 50%;
         font-size: 12px;
         font-weight: 600;
         color: #fff;
         background: var(--accent-2);
         cursor: default;
-        position: relative;
       }
 
-      .hint::after {
-        content: attr(data-tip);
+      .tooltip {
         position: absolute;
         left: 50%;
         bottom: 130%;
         transform: translateX(-50%);
         background: #2b2a28;
         color: #fff;
-        padding: 8px 10px;
+        padding: 10px 12px;
         border-radius: 8px;
         font-size: 12px;
-        white-space: nowrap;
+        min-width: 280px;
+        max-width: 420px;
         opacity: 0;
         pointer-events: none;
         transition: opacity 120ms ease;
         box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+        line-height: 1.5;
       }
 
-      .hint:hover::after {
+      .hint-wrap:hover .tooltip {
         opacity: 1;
+      }
+
+      .tip-group {
+        padding-left: 8px;
+        border-left: 3px solid transparent;
+        margin: 6px 0;
+      }
+
+      .tip-attr {
+        border-color: #f6c77b;
+        color: #ffe7c2;
+      }
+
+      .tip-attack {
+        border-color: #8dd1c6;
+        color: #d3f2ed;
+      }
+
+      .tip-dmg {
+        border-color: #f09a9a;
+        color: #ffd9d9;
+      }
+
+      .tip-other {
+        border-color: #b6b0a6;
+        color: #f0e9dd;
       }
 
       label {
@@ -403,6 +437,7 @@
           </div>
           <div class="actions" style="margin-top: 12px">
             <button id="reset" class="secondary">重置为默认值</button>
+            <button id="clear" class="secondary">一键清空</button>
           </div>
           <div id="warning" class="warning"></div>
         </section>
@@ -410,17 +445,94 @@
 
       <div class="grid grid-3" style="margin-top: 16px">
         <section class="card">
-          <h2>战斗力 <span class="hint" data-tip="战斗力 = 属性 * 攻击 * 伤害 * (1+创世武器最终伤害) * (1+怪怪卡最终伤害)">?</span></h2>
+          <h2>
+            战斗力
+            <span class="hint-wrap">
+              <span class="hint">?</span>
+              <span class="tooltip">
+                <div class="tip-group tip-attr">
+                  属性 = floor((主属性基础值 - 主属性技能) * (1 + 主属性%) ) + 主属性非%加成
+                  <br />
+                  副属性 = floor((副属性基础值 - 副属性技能) * (1 + 副属性%) ) + 副属性非%加成
+                  <br />
+                  属性总和 = (主属性 * 4 + 副属性) / 100
+                </div>
+                <div class="tip-group tip-attack">
+                  攻击 = floor((攻击力基础值 - 攻击力技能 + 皇后祝福 + weapon_fix) * (1 + 攻击力%))
+                </div>
+                <div class="tip-group tip-dmg">
+                  伤害 = (1 + 伤害% - 伤害技能%) + (Boss伤% - Boss伤技能%)
+                  <br />
+                  暴击 = (1.35 + 暴伤% - 暴伤技能%)
+                  <br />
+                  伤害乘区 = 伤害 * 暴击
+                </div>
+                <div class="tip-group tip-other">
+                  战斗力 = 属性总和 * 攻击 * 伤害乘区 * (1 + 创世武器最终伤害%) * (1 + 怪怪卡最终伤害%)
+                </div>
+              </span>
+            </span>
+          </h2>
           <div class="result" id="combat_power">-</div>
           <div class="note">新面板。</div>
         </section>
         <section class="card">
-          <h2>面板</h2>
+          <h2>
+            面板
+            <span class="hint-wrap">
+              <span class="hint">?</span>
+              <span class="tooltip">
+                <div class="tip-group tip-attr">
+                  主属性 = floor(主属性基础值 * (1 + 主属性%) + 主属性非%加成)
+                  <br />
+                  副属性 = floor(副属性基础值 * (1 + 副属性%) + 副属性非%加成)
+                  <br />
+                  属性总和 = (主属性 * 4 + 副属性) / 100
+                </div>
+                <div class="tip-group tip-attack">
+                  攻击 = floor(攻击力基础值 * (1 + 攻击力%) + 攻击力非%加成)
+                </div>
+                <div class="tip-group tip-dmg">
+                  面板伤害 = (1 + 伤害%) * (1 + 最终伤害%)
+                </div>
+                <div class="tip-group tip-other">
+                  面板 = 属性总和 * 1.2 * 攻击 * 面板伤害
+                </div>
+              </span>
+            </span>
+          </h2>
           <div class="result" id="panel_output">-</div>
           <div class="note">旧面板。</div>
         </section>
         <section class="card">
-          <h2>输出</h2>
+          <h2>
+            输出
+            <span class="hint-wrap">
+              <span class="hint">?</span>
+              <span class="tooltip">
+                <div class="tip-group tip-attr">
+                  主属性 = floor(主属性基础值 * (1 + 主属性%) + 主属性非%加成)
+                  <br />
+                  副属性 = floor(副属性基础值 * (1 + 副属性%) + 副属性非%加成)
+                  <br />
+                  属性总和 = (主属性 * 4 + 副属性) / 100
+                </div>
+                <div class="tip-group tip-attack">
+                  攻击 = floor(攻击力基础值 * (1 + 攻击力%) + 攻击力非%加成)
+                </div>
+                <div class="tip-group tip-dmg">
+                  最终伤害 = (1 + 最终伤害%)
+                  <br />
+                  伤害加成 = (1 + 伤害% + Boss伤%)
+                  <br />
+                  暴击加成 = (1 + 暴伤%)
+                </div>
+                <div class="tip-group tip-other">
+                  输出 = 属性总和 * 1.2 * 攻击 * 最终伤害 * 伤害加成 * 暴击加成
+                </div>
+              </span>
+            </span>
+          </h2>
           <div class="result" id="damage_output">-</div>
           <div class="note">输出伤害（计算包括P2，但是不包括攻击技能本身的%）。</div>
         </section>
@@ -519,6 +631,35 @@
         return values;
       }
 
+      function savePreset(values) {
+        const payload = {
+          ...values,
+          known_cp: document.getElementById("known_cp").value || ""
+        };
+        localStorage.setItem("maplecal_preset", JSON.stringify(payload));
+      }
+
+      function loadPreset() {
+        const stored = localStorage.getItem("maplecal_preset");
+        if (!stored) {
+          return;
+        }
+        let preset = {};
+        try {
+          preset = JSON.parse(stored);
+        } catch {
+          return;
+        }
+        ids.forEach((id) => {
+          if (preset[id] !== undefined) {
+            document.getElementById(id).value = preset[id];
+          }
+        });
+        if (preset.known_cp !== undefined) {
+          document.getElementById("known_cp").value = preset.known_cp;
+        }
+      }
+
       function renderDeltaList(deltaItems) {
         const container = document.getElementById("delta_list");
         container.innerHTML = "";
@@ -596,6 +737,7 @@
           }
           renderDeltaList(data.delta_items || []);
           fetchEquivalent(values);
+          savePreset(values);
         } catch (err) {
           warning.textContent = err.message || "计算失败";
         }
@@ -653,6 +795,14 @@
         document.getElementById("weapon_fix_note").textContent = "";
         calculateAll();
       });
+      document.getElementById("clear").addEventListener("click", () => {
+        ids.forEach((id) => {
+          document.getElementById(id).value = "";
+        });
+        document.getElementById("known_cp").value = "";
+        document.getElementById("weapon_fix_note").textContent = "";
+        calculateAll();
+      });
 
       document.querySelectorAll("input[type='number']").forEach((input) => {
         input.addEventListener("input", () => {
@@ -660,6 +810,7 @@
         });
       });
 
+      loadPreset();
       calculateAll();
     </script>
   </body>

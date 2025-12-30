@@ -259,6 +259,7 @@ def api_weapon_fix(data: WeaponFixInput) -> Dict[str, float]:
     attribute = build_attribute(normalized)
     damage = build_damage(normalized)
     attack = build_attack(normalized, weapon_fix=None)
-    combat = CombatPower(attribute, attack, damage, normalized.gwp_fd, normalized.mst_fd)
+    ign_obj = IGN(normalized.ign, normalized.p2)
+    combat = CombatPower(attribute, attack, damage, ign_obj, normalized.gwp_fd, normalized.mst_fd)
     weapon_fix = combat.calculate_weapon_fix(data.known_cp)
     return {"weapon_fix": weapon_fix}
