@@ -402,7 +402,6 @@
             </label>
           </div>
           <div class="actions" style="margin-top: 12px">
-            <button id="calculate">计算</button>
             <button id="reset" class="secondary">重置为默认值</button>
           </div>
           <div id="warning" class="warning"></div>
@@ -629,7 +628,6 @@
         }
       });
 
-      document.getElementById("calculate").addEventListener("click", calculateAll);
       document.querySelectorAll("#equivalent_buttons button").forEach((btn) => {
         btn.addEventListener("click", () => {
           document.querySelectorAll("#equivalent_buttons button").forEach((b) => {
