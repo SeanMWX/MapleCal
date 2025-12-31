@@ -21,10 +21,10 @@ from calculator import (
 app = FastAPI()
 
 BASE_DIR = Path(__file__).resolve().parent
-INDEX_FILE = BASE_DIR / "index.html"
-COMPARE_FILE = BASE_DIR / "compare.html"
+INDEX_FILE = BASE_DIR / "assets" / "index.html"
+COMPARE_FILE = BASE_DIR / "assets" / "compare.html"
 
-app.mount("/assests", StaticFiles(directory=BASE_DIR / "assests"), name="assests")
+app.mount("/assets", StaticFiles(directory=BASE_DIR / "assets"), name="assets")
 
 
 class CalcInput(BaseModel):
