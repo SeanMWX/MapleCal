@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>参考文献</title>
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;600&family=Space+Grotesk:wght@400;600&display=swap");
+
+      :root {
+        --bg: #f4efe7;
+        --bg-2: #f0e3d1;
+        --ink: #1c1b1a;
+        --muted: #6b655c;
+        --accent: #c94f2d;
+        --card: #fff7ed;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        color: var(--ink);
+        font-family: "Noto Sans SC", "Space Grotesk", sans-serif;
+        background:
+          radial-gradient(900px 500px at 10% -10%, #ffe8c7 0, transparent 60%),
+          radial-gradient(700px 400px at 110% 10%, #d9f1ef 0, transparent 60%),
+          linear-gradient(180deg, var(--bg), var(--bg-2));
+        min-height: 100vh;
+      }
+
+      .wrap {
+        max-width: 900px;
+        margin: 0 auto;
+        padding: 32px 20px 60px;
+      }
+
+      header {
+        display: grid;
+        gap: 8px;
+        margin-bottom: 20px;
+      }
+
+      h1 {
+        font-family: "Space Grotesk", "Noto Sans SC", sans-serif;
+        font-size: clamp(26px, 3.5vw, 40px);
+        margin: 0;
+        letter-spacing: 0.5px;
+      }
+
+      p {
+        margin: 0;
+        color: var(--muted);
+      }
+
+      .card {
+        background: var(--card);
+        border: 1px solid rgba(0, 0, 0, 0.06);
+        border-radius: 16px;
+        padding: 16px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+      }
+
+      a {
+        color: var(--accent);
+        text-decoration: none;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <header>
+        <h1>参考文献</h1>
+        <p>若你需要改公式或增加模块，请联系我。</p>
+      </header>
+      <section class="card">
+        <h2>计算力计算公式来源于 BiliBili UP主 鱼匠yoyo的视频</h2>
+        <p><a href="https://www.bilibili.com/video/BV1ZkVczSEwN/" target="_blank" rel="noopener noreferrer">【CMS冒险岛】冒险岛战斗力计算公式详细解读</a></p>
+        <h2>其余计算公式参考于Youtuber 盲侠的《新枫之谷小学堂》一系列视频</h2>
+        <p><a href="https://www.youtube.com/watch?v=ce9zIrByMX8" target="_blank" rel="noopener noreferrer">新楓之谷｜【無視防禦率】根本就不爛，也許只是你不夠瞭解它！</a></p>
+        <p><a href="https://www.youtube.com/watch?v=8jgt8i3C4_Q" target="_blank" rel="noopener noreferrer">新楓之谷｜表攻能有多「假」？別輕易相信高表攻｜總傷害與BOSS傷害的關係</a></p>
+      </section>
+    </div>
+  </body>
+</html>

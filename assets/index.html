@@ -726,7 +726,6 @@
             </label>
           </div>
           <div class="actions" style="margin-top: 12px">
-            <button id="reset" class="secondary">重置为默认值</button>
             <button id="clear" class="secondary">一键清空</button>
           </div>
           <div id="warning" class="warning"></div>
@@ -861,7 +860,7 @@
       </section>
 
       <footer>
-        公式来源：calculator.py。若你需要改公式或增加模块，告诉我。
+        公式来源：<a href="/assets/references.html">参考文献</a>。若你需要改公式或增加模块，请联系我。
         <div><a href="/compare">打开双栏对比页面</a></div>
       </footer>
     </div>
@@ -1013,9 +1012,14 @@
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(values)
           });
-          const data = await response.json();
+          let data;
+          try {
+            data = await response.json();
+          } catch {
+            throw new Error("计算失败：请检查是否有空值或格式错误");
+          }
           if (!response.ok) {
-            throw new Error(data.detail || "计算失败");
+            throw new Error(data.detail || "计算失败：请检查是否有空值或格式错误");
           }
 
           document.getElementById("combat_power").textContent =
@@ -1030,7 +1034,10 @@
           fetchEquivalent(values);
           savePreset(values);
         } catch (err) {
-          warning.textContent = err.message || "计算失败";
+          warning.textContent = err.message || "计算失败：请检查是否有空值或格式错误";
+          document.getElementById("combat_power").textContent = "-";
+          document.getElementById("panel_output").textContent = "-";
+          document.getElementById("damage_output").textContent = "-";
         }
       }
 
@@ -1049,15 +1056,20 @@
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ ...values, known_cp: knownCp })
           });
-          const data = await response.json();
+          let data;
+          try {
+            data = await response.json();
+          } catch {
+            throw new Error("推导失败：请检查是否有空值或格式错误");
+          }
           if (!response.ok) {
-            throw new Error(data.detail || "推导失败");
+            throw new Error(data.detail || "推导失败：请检查是否有空值或格式错误");
           }
           document.getElementById("weapon_fix").value = data.weapon_fix.toFixed(2);
           note.textContent = `已推导 weapon_fix = ${data.weapon_fix.toFixed(2)}`;
           calculateAll();
         } catch (err) {
-          note.textContent = err.message || "推导失败";
+          note.textContent = err.message || "推导失败：请检查是否有空值或格式错误";
         }
       });
 
@@ -1078,14 +1090,6 @@
         defaultButton.classList.add("active");
         defaultButton.classList.remove("secondary");
       }
-      document.getElementById("reset").addEventListener("click", () => {
-        ids.forEach((id) => {
-          document.getElementById(id).value = defaults[id];
-        });
-        document.getElementById("known_cp").value = "";
-        document.getElementById("weapon_fix_note").textContent = "";
-        calculateAll();
-      });
       document.getElementById("clear").addEventListener("click", () => {
         ids.forEach((id) => {
           document.getElementById(id).value = "";
