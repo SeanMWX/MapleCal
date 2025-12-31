@@ -96,6 +96,30 @@
         color: var(--muted);
       }
 
+      .label-row {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .diff-badge {
+        font-size: 12px;
+        padding: 2px 8px;
+        border-radius: 999px;
+        background: rgba(0, 0, 0, 0.08);
+        color: #585248;
+      }
+
+      .diff-up {
+        background: rgba(46, 120, 93, 0.18);
+        color: #1f5c47;
+      }
+
+      .diff-down {
+        background: rgba(173, 64, 46, 0.18);
+        color: #7a2f21;
+      }
+
       input[type="number"] {
         padding: 10px 12px;
         border-radius: 10px;
@@ -156,6 +180,16 @@
         border-radius: 12px;
         background: rgba(0, 0, 0, 0.03);
         font-size: 14px;
+      }
+
+      .delta-up {
+        background: rgba(46, 120, 93, 0.18);
+        color: #1f5c47;
+      }
+
+      .delta-down {
+        background: rgba(173, 64, 46, 0.18);
+        color: #7a2f21;
       }
 
       .warning {
@@ -266,7 +300,19 @@
         container.innerHTML = "";
         fields.forEach((field) => {
           const wrapper = document.createElement("label");
-          wrapper.textContent = field.label;
+          const labelRow = document.createElement("span");
+          labelRow.className = "label-row";
+          const labelText = document.createElement("span");
+          labelText.textContent = field.label;
+          labelRow.appendChild(labelText);
+          if (prefix === "b") {
+            const diff = document.createElement("span");
+            diff.className = "diff-badge";
+            diff.id = `diff_${field.key}`;
+            diff.textContent = "±0";
+            labelRow.appendChild(diff);
+          }
+          wrapper.appendChild(labelRow);
           const input = document.createElement("input");
           input.type = "number";
           input.id = `${prefix}_${field.key}`;
@@ -293,6 +339,28 @@
         return values;
       }
 
+      function updateDiffs() {
+        const a = readValues("a");
+        const b = readValues("b");
+        fields.forEach((field) => {
+          const diffEl = document.getElementById(`diff_${field.key}`);
+          if (!diffEl) {
+            return;
+          }
+          const delta = (b[field.key] ?? 0) - (a[field.key] ?? 0);
+          const sign = delta > 0 ? "+" : delta < 0 ? "-" : "±";
+          const value = Math.abs(delta);
+          const formatted = Number.isFinite(value) ? value.toFixed(2).replace(/\.00$/, "") : "0";
+          diffEl.textContent = `${sign}${formatted}`;
+          diffEl.classList.remove("diff-up", "diff-down");
+          if (delta > 0) {
+            diffEl.classList.add("diff-up");
+          } else if (delta < 0) {
+            diffEl.classList.add("diff-down");
+          }
+        });
+      }
+
       function formatNumber(num) {
         return Number.isFinite(num) ? num.toLocaleString("en-US") : "-";
       }
@@ -301,7 +369,14 @@
         const delta = b - a;
         const percent = a === 0 ? 0 : (delta / a) * 100;
         const sign = delta >= 0 ? "+" : "";
-        document.getElementById(elId).textContent = `差值：${sign}${formatNumber(delta)} (${sign}${percent.toFixed(2)}%)`;
+        const el = document.getElementById(elId);
+        el.textContent = `差值：${sign}${formatNumber(delta)} (${sign}${percent.toFixed(2)}%)`;
+        el.classList.remove("delta-up", "delta-down");
+        if (delta > 0) {
+          el.classList.add("delta-up");
+        } else if (delta < 0) {
+          el.classList.add("delta-down");
+        }
       }
 
       async function fetchCalc(values) {
@@ -341,6 +416,7 @@
           if (a.warning || b.warning) {
             warning.textContent = [a.warning, b.warning].filter(Boolean).join(" | ");
           }
+          updateDiffs();
         } catch (err) {
           warning.textContent = err.message || "对比失败";
         }
@@ -359,6 +435,7 @@
           if (event.target.id && event.target.id.startsWith("b_")) {
             savePresetB(readValues("b"));
           }
+          updateDiffs();
           compare();
         }
       });
@@ -383,6 +460,7 @@
       const presetB = loadPreset("maplecal_preset_b");
       renderForm("form-a", "a", presetA, true);
       renderForm("form-b", "b", Object.keys(presetB).length ? presetB : presetA, false);
+      updateDiffs();
       compare();
     </script>
   </body>
