@@ -105,6 +105,7 @@
         color: #fff;
         background: var(--accent-2);
         cursor: default;
+        z-index: 1;
       }
 
       .tooltip {
@@ -124,6 +125,7 @@
         transition: opacity 120ms ease;
         box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
         line-height: 1.5;
+        z-index: 10;
       }
 
       .tooltip.tooltip-down {
@@ -525,7 +527,16 @@
             </label>
           </div>
           <div class="grid" style="margin-top: 12px">
-            <label>已知战斗力 CP (用于推导 weapon_fix)
+            <label>
+              <span class="label-row">
+                战斗力CP (用于推导 weapon_fix)
+                <span class="hint-wrap">
+                  <span class="hint">?</span>
+                  <span class="tooltip tooltip-down">
+                    <img src="assests/pics/战斗力CP.png" alt="战斗力CP 说明" />
+                  </span>
+                </span>
+              </span>
               <input id="known_cp" type="number" placeholder="例如 293820984" />
             </label>
             <div class="actions">
