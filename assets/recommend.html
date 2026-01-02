@@ -119,6 +119,23 @@
         gap: 10px;
       }
 
+      .field-list {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+        gap: 8px;
+        padding: 10px;
+        border-radius: 12px;
+        background: rgba(0, 0, 0, 0.03);
+      }
+
+      .field-list label {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 13px;
+        color: var(--ink);
+      }
+
       button {
         border: none;
         border-radius: 999px;
@@ -227,6 +244,26 @@
               最大步骤数（避免过长）
               <input id="max_steps" type="number" value="50" />
             </label>
+            <div>
+              <div class="note">可选参与推荐的属性</div>
+              <div class="field-list" id="field_list">
+                <label><input type="checkbox" value="main_base" checked />主属性基础值</label>
+                <label><input type="checkbox" value="main_percent" checked />主属性%</label>
+                <label><input type="checkbox" value="main_notper" checked />主属性非%加成</label>
+                <label><input type="checkbox" value="sub_base" checked />副属性基础值</label>
+                <label><input type="checkbox" value="sub_percent" checked />副属性%</label>
+                <label><input type="checkbox" value="sub_notper" checked />副属性非%加成</label>
+                <label><input type="checkbox" value="attack_base" checked />攻击力基础值</label>
+                <label><input type="checkbox" value="attack_percet" checked />攻击力%</label>
+                <label><input type="checkbox" value="attack_notper" checked />攻击力非%加成</label>
+                <label><input type="checkbox" value="dmg" checked />伤害%</label>
+                <label><input type="checkbox" value="bossdmg" checked />Boss伤%</label>
+                <label><input type="checkbox" value="cridmg" checked />暴伤%</label>
+                <label><input type="checkbox" value="final_damage" checked />最终伤害%</label>
+                <label><input type="checkbox" value="ign" checked />无视防御%</label>
+                <label><input type="checkbox" value="p2" checked />全属性防御穿透%</label>
+              </div>
+            </div>
           </div>
           <div class="actions" style="margin-top: 12px">
             <button id="run_recommend">推荐下一步</button>
@@ -286,6 +323,23 @@
         { key: "boss_def", label: "Boss防御% (输入百分比)", value: 300 },
         { key: "weapon_rate", label: "武器系数", value: 1.2 }
       ];
+      const recommendFields = [
+        { key: "main_base", label: "主属性基础值" },
+        { key: "main_percent", label: "主属性%" },
+        { key: "main_notper", label: "主属性非%加成" },
+        { key: "sub_base", label: "副属性基础值" },
+        { key: "sub_percent", label: "副属性%" },
+        { key: "sub_notper", label: "副属性非%加成" },
+        { key: "attack_base", label: "攻击力基础值" },
+        { key: "attack_percet", label: "攻击力%" },
+        { key: "attack_notper", label: "攻击力非%加成" },
+        { key: "dmg", label: "伤害%" },
+        { key: "bossdmg", label: "Boss伤%" },
+        { key: "cridmg", label: "暴伤%" },
+        { key: "final_damage", label: "最终伤害%" },
+        { key: "ign", label: "无视防御%" },
+        { key: "p2", label: "全属性防御穿透%" }
+      ];
 
       function renderForm(containerId, overrides = {}, readOnly = false) {
         const container = document.getElementById(containerId);
@@ -304,6 +358,22 @@
           }
           wrapper.appendChild(input);
           container.appendChild(wrapper);
+        });
+      }
+
+      function renderFieldList(containerId, overrides = []) {
+        const container = document.getElementById(containerId);
+        container.innerHTML = "";
+        const active = new Set(overrides.length ? overrides : recommendFields.map((item) => item.key));
+        recommendFields.forEach((field) => {
+          const label = document.createElement("label");
+          const checkbox = document.createElement("input");
+          checkbox.type = "checkbox";
+          checkbox.value = field.key;
+          checkbox.checked = active.has(field.key);
+          label.appendChild(checkbox);
+          label.appendChild(document.createTextNode(field.label));
+          container.appendChild(label);
         });
       }
 
@@ -330,6 +400,12 @@
         return values;
       }
 
+      function readSelectedFields() {
+        return Array.from(document.querySelectorAll("#field_list input[type='checkbox']:checked")).map(
+          (item) => item.value
+        );
+      }
+
       function savePreset(values) {
         localStorage.setItem("maplecal_preset", JSON.stringify(values));
       }
@@ -343,6 +419,22 @@
           return JSON.parse(stored);
         } catch {
           return {};
+        }
+      }
+
+      function saveRecommendFields(keys) {
+        localStorage.setItem("maplecal_recommend_fields", JSON.stringify(keys));
+      }
+
+      function loadRecommendFields() {
+        const stored = localStorage.getItem("maplecal_recommend_fields");
+        if (!stored) {
+          return [];
+        }
+        try {
+          return JSON.parse(stored);
+        } catch {
+          return [];
         }
       }
 
@@ -400,7 +492,8 @@
           const left = `${index + 1}. ${step.label || step.field}`;
           const metricValue = Number.isFinite(step.metric_value) ? step.metric_value.toFixed(2) : "-";
           const newValue = Number.isFinite(step.new_value) ? step.new_value.toFixed(4) : "-";
-          const right = `+${step.step} (${newValue}) → ${metricValue}`;
+          const percentGain = Number.isFinite(step.percent_gain) ? step.percent_gain.toFixed(4) : "-";
+          const right = `+${step.step} (${newValue}) → +${percentGain}% (${metricValue})`;
           row.innerHTML = `<span>${left}</span><span>${right}</span>`;
           container.appendChild(row);
         });
@@ -411,8 +504,9 @@
         const metric = document.getElementById("metric").value;
         const step = num("step") || 1;
         const values = readValues();
+        const selectedFields = readSelectedFields();
         try {
-          const data = await fetchJson("/api/recommend", { ...values, metric, step });
+          const data = await fetchJson("/api/recommend", { ...values, metric, step, fields: selectedFields });
           if (data.warning) {
             setWarning(data.warning);
             document.getElementById("best_field").textContent = "-";
@@ -422,6 +516,7 @@
           document.getElementById("best_field").textContent = data.label || data.field || "-";
           document.getElementById("best_detail").textContent = `边际提升：${data.percent.toFixed(4)}%`;
           savePreset(values);
+          saveRecommendFields(selectedFields);
           updateCurrentMetric();
         } catch (err) {
           setWarning(err.message || "推荐失败");
@@ -439,13 +534,15 @@
           return;
         }
         const values = readValues();
+        const selectedFields = readSelectedFields();
         try {
           const data = await fetchJson("/api/plan", {
             ...values,
             metric,
             step,
             max_steps: maxSteps,
-            target_value: targetValue
+            target_value: targetValue,
+            fields: selectedFields
           });
           if (data.warning) {
             setWarning(data.warning);
@@ -454,6 +551,7 @@
           }
           renderPlanSteps(data.steps || []);
           savePreset(values);
+          saveRecommendFields(selectedFields);
           updateCurrentMetric();
         } catch (err) {
           setWarning(err.message || "路线生成失败");
@@ -471,6 +569,7 @@
       });
 
       renderForm("form-values", loadPreset(), true);
+      renderFieldList("field_list", loadRecommendFields());
       updateCurrentMetric();
     </script>
   </body>
