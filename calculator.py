@@ -426,6 +426,306 @@ def calculate_equivalent_increase(
     return equivalents
 
 
+DEFAULT_RECOMMEND_FIELDS = [
+    "main_base",
+    "main_percent",
+    "main_notper",
+    "sub_base",
+    "sub_percent",
+    "sub_notper",
+    "attack_base",
+    "attack_percet",
+    "attack_notper",
+    "dmg",
+    "bossdmg",
+    "cridmg",
+    "final_damage",
+    "ign",
+    "p2",
+]
+
+PERCENT_FIELDS = {
+    "main_percent",
+    "sub_percent",
+    "attack_percet",
+    "dmg",
+    "dmg_skill",
+    "bossdmg",
+    "bossdmg_skill",
+    "dmg_shitu",
+    "cridmg",
+    "cridmg_skill",
+    "final_damage",
+    "gwp_fd",
+    "mst_fd",
+    "ign",
+    "p2",
+    "boss_def",
+}
+
+
+def _apply_step(field, value, step):
+    step = 1.0 if step <= 0 else step
+    if field in {"ign", "p2"}:
+        step_percent = step / 100
+        return 1 - ((1 - value) * (1 - step_percent))
+    if field in PERCENT_FIELDS:
+        return value + step / 100
+    return value + step
+
+
+def _calculate_metric_value(
+    metric,
+    main_base, main_skill, main_percent, main_notper,
+    sub_base, sub_skill, sub_percent, sub_notper,
+    attack_base, attack_skill, empress_blessing, weapon_fix, attack_percet, attack_notper, attack_shitu,
+    dmg, dmg_skill, bossdmg, bossdmg_skill, dmg_shitu, cridmg, cridmg_skill, final_damage,
+    ign, p2, boss_def,
+    gwp_fd, mst_fd, weapon_rate,
+):
+    damage = Damage(dmg, dmg_skill, bossdmg, bossdmg_skill, dmg_shitu, cridmg, cridmg_skill, final_damage)
+    attribute = Attribute(main_base, main_skill, main_percent, main_notper,
+                          sub_base, sub_skill, sub_percent, sub_notper)
+    attack = Attack(attack_base, attack_skill, empress_blessing, weapon_fix, attack_percet, attack_notper, attack_shitu)
+    ign_obj = IGN(ign, p2)
+    combat = CombatPower(attribute, attack, damage, ign_obj, gwp_fd, mst_fd, weapon_rate)
+
+    if metric == "combat_power":
+        if weapon_fix is None:
+            raise ValueError("weapon_fix is required for combat_power")
+        return combat.calculate_combat_power()
+    if metric == "panel":
+        return combat.calculate_mianban()
+    if metric == "damage_output":
+        return combat.calculate_damage_output(boss_def)
+    raise ValueError(f"unsupported metric: {metric}")
+
+
+def calculate_metric_percent_increase(
+    metric,
+    main_base, main_skill, main_percent, main_notper,
+    sub_base, sub_skill, sub_percent, sub_notper,
+    attack_base, attack_skill, empress_blessing, weapon_fix, attack_percet, attack_notper, attack_shitu,
+    dmg, dmg_skill, bossdmg, bossdmg_skill, dmg_shitu, cridmg, cridmg_skill, final_damage,
+    ign, p2, boss_def,
+    gwp_fd, mst_fd, weapon_rate,
+    step=1.0,
+    fields=None,
+):
+    step = 1.0 if step <= 0 else step
+    fields = fields or DEFAULT_RECOMMEND_FIELDS
+
+    base_value = _calculate_metric_value(
+        metric,
+        main_base, main_skill, main_percent, main_notper,
+        sub_base, sub_skill, sub_percent, sub_notper,
+        attack_base, attack_skill, empress_blessing, weapon_fix, attack_percet, attack_notper, attack_shitu,
+        dmg, dmg_skill, bossdmg, bossdmg_skill, dmg_shitu, cridmg, cridmg_skill, final_damage,
+        ign, p2, boss_def,
+        gwp_fd, mst_fd, weapon_rate,
+    )
+    if base_value in (None, 0):
+        return {}
+
+    values = {
+        "main_base": main_base,
+        "main_skill": main_skill,
+        "main_percent": main_percent,
+        "main_notper": main_notper,
+        "sub_base": sub_base,
+        "sub_skill": sub_skill,
+        "sub_percent": sub_percent,
+        "sub_notper": sub_notper,
+        "attack_base": attack_base,
+        "attack_skill": attack_skill,
+        "empress_blessing": empress_blessing,
+        "weapon_fix": weapon_fix,
+        "attack_percet": attack_percet,
+        "attack_notper": attack_notper,
+        "attack_shitu": attack_shitu,
+        "dmg": dmg,
+        "dmg_skill": dmg_skill,
+        "bossdmg": bossdmg,
+        "bossdmg_skill": bossdmg_skill,
+        "dmg_shitu": dmg_shitu,
+        "cridmg": cridmg,
+        "cridmg_skill": cridmg_skill,
+        "final_damage": final_damage,
+        "ign": ign,
+        "p2": p2,
+        "boss_def": boss_def,
+        "gwp_fd": gwp_fd,
+        "mst_fd": mst_fd,
+        "weapon_rate": weapon_rate,
+    }
+
+    results = {}
+    for field in fields:
+        if field not in values:
+            continue
+        if field == "weapon_fix" and values[field] is None:
+            continue
+
+        next_values = dict(values)
+        next_values[field] = _apply_step(field, values[field], step)
+
+        next_value = _calculate_metric_value(
+            metric,
+            next_values["main_base"], next_values["main_skill"], next_values["main_percent"], next_values["main_notper"],
+            next_values["sub_base"], next_values["sub_skill"], next_values["sub_percent"], next_values["sub_notper"],
+            next_values["attack_base"], next_values["attack_skill"], next_values["empress_blessing"], next_values["weapon_fix"],
+            next_values["attack_percet"], next_values["attack_notper"], next_values["attack_shitu"],
+            next_values["dmg"], next_values["dmg_skill"], next_values["bossdmg"], next_values["bossdmg_skill"],
+            next_values["dmg_shitu"], next_values["cridmg"], next_values["cridmg_skill"], next_values["final_damage"],
+            next_values["ign"], next_values["p2"], next_values["boss_def"],
+            next_values["gwp_fd"], next_values["mst_fd"], next_values["weapon_rate"],
+        )
+        results[field] = (next_value - base_value) / base_value * 100
+
+    return results
+
+
+def recommend_next_upgrade(
+    metric,
+    main_base, main_skill, main_percent, main_notper,
+    sub_base, sub_skill, sub_percent, sub_notper,
+    attack_base, attack_skill, empress_blessing, weapon_fix, attack_percet, attack_notper, attack_shitu,
+    dmg, dmg_skill, bossdmg, bossdmg_skill, dmg_shitu, cridmg, cridmg_skill, final_damage,
+    ign, p2, boss_def,
+    gwp_fd, mst_fd, weapon_rate,
+    step=1.0,
+    fields=None,
+):
+    increases = calculate_metric_percent_increase(
+        metric,
+        main_base, main_skill, main_percent, main_notper,
+        sub_base, sub_skill, sub_percent, sub_notper,
+        attack_base, attack_skill, empress_blessing, weapon_fix, attack_percet, attack_notper, attack_shitu,
+        dmg, dmg_skill, bossdmg, bossdmg_skill, dmg_shitu, cridmg, cridmg_skill, final_damage,
+        ign, p2, boss_def,
+        gwp_fd, mst_fd, weapon_rate,
+        step=step,
+        fields=fields,
+    )
+    if not increases:
+        return None
+    best_field = max(increases, key=increases.get)
+    return {"field": best_field, "percent": increases[best_field], "step": step}
+
+
+def plan_to_target(
+    metric,
+    target_value,
+    main_base, main_skill, main_percent, main_notper,
+    sub_base, sub_skill, sub_percent, sub_notper,
+    attack_base, attack_skill, empress_blessing, weapon_fix, attack_percet, attack_notper, attack_shitu,
+    dmg, dmg_skill, bossdmg, bossdmg_skill, dmg_shitu, cridmg, cridmg_skill, final_damage,
+    ign, p2, boss_def,
+    gwp_fd, mst_fd, weapon_rate,
+    step=1.0,
+    fields=None,
+    max_steps=200,
+):
+    if target_value <= 0:
+        raise ValueError("target_value must be positive")
+
+    values = {
+        "main_base": main_base,
+        "main_skill": main_skill,
+        "main_percent": main_percent,
+        "main_notper": main_notper,
+        "sub_base": sub_base,
+        "sub_skill": sub_skill,
+        "sub_percent": sub_percent,
+        "sub_notper": sub_notper,
+        "attack_base": attack_base,
+        "attack_skill": attack_skill,
+        "empress_blessing": empress_blessing,
+        "weapon_fix": weapon_fix,
+        "attack_percet": attack_percet,
+        "attack_notper": attack_notper,
+        "attack_shitu": attack_shitu,
+        "dmg": dmg,
+        "dmg_skill": dmg_skill,
+        "bossdmg": bossdmg,
+        "bossdmg_skill": bossdmg_skill,
+        "dmg_shitu": dmg_shitu,
+        "cridmg": cridmg,
+        "cridmg_skill": cridmg_skill,
+        "final_damage": final_damage,
+        "ign": ign,
+        "p2": p2,
+        "boss_def": boss_def,
+        "gwp_fd": gwp_fd,
+        "mst_fd": mst_fd,
+        "weapon_rate": weapon_rate,
+    }
+
+    current = _calculate_metric_value(
+        metric,
+        values["main_base"], values["main_skill"], values["main_percent"], values["main_notper"],
+        values["sub_base"], values["sub_skill"], values["sub_percent"], values["sub_notper"],
+        values["attack_base"], values["attack_skill"], values["empress_blessing"], values["weapon_fix"],
+        values["attack_percet"], values["attack_notper"], values["attack_shitu"],
+        values["dmg"], values["dmg_skill"], values["bossdmg"], values["bossdmg_skill"],
+        values["dmg_shitu"], values["cridmg"], values["cridmg_skill"], values["final_damage"],
+        values["ign"], values["p2"], values["boss_def"],
+        values["gwp_fd"], values["mst_fd"], values["weapon_rate"],
+    )
+
+    steps = []
+    if current >= target_value:
+        return {"reached": True, "current": current, "steps": steps}
+
+    fields = fields or DEFAULT_RECOMMEND_FIELDS
+    for _ in range(max_steps):
+        increases = calculate_metric_percent_increase(
+            metric,
+            values["main_base"], values["main_skill"], values["main_percent"], values["main_notper"],
+            values["sub_base"], values["sub_skill"], values["sub_percent"], values["sub_notper"],
+            values["attack_base"], values["attack_skill"], values["empress_blessing"], values["weapon_fix"],
+            values["attack_percet"], values["attack_notper"], values["attack_shitu"],
+            values["dmg"], values["dmg_skill"], values["bossdmg"], values["bossdmg_skill"],
+            values["dmg_shitu"], values["cridmg"], values["cridmg_skill"], values["final_damage"],
+            values["ign"], values["p2"], values["boss_def"],
+            values["gwp_fd"], values["mst_fd"], values["weapon_rate"],
+            step=step,
+            fields=fields,
+        )
+        if not increases:
+            break
+
+        best_field = max(increases, key=increases.get)
+        if increases[best_field] <= 0:
+            break
+
+        values[best_field] = _apply_step(best_field, values[best_field], step)
+        current = _calculate_metric_value(
+            metric,
+            values["main_base"], values["main_skill"], values["main_percent"], values["main_notper"],
+            values["sub_base"], values["sub_skill"], values["sub_percent"], values["sub_notper"],
+            values["attack_base"], values["attack_skill"], values["empress_blessing"], values["weapon_fix"],
+            values["attack_percet"], values["attack_notper"], values["attack_shitu"],
+            values["dmg"], values["dmg_skill"], values["bossdmg"], values["bossdmg_skill"],
+            values["dmg_shitu"], values["cridmg"], values["cridmg_skill"], values["final_damage"],
+            values["ign"], values["p2"], values["boss_def"],
+            values["gwp_fd"], values["mst_fd"], values["weapon_rate"],
+        )
+        steps.append(
+            {
+                "field": best_field,
+                "step": step,
+                "metric_value": current,
+                "percent_gain": increases[best_field],
+                "new_value": values[best_field],
+            }
+        )
+        if current >= target_value:
+            return {"reached": True, "current": current, "steps": steps}
+
+    return {"reached": False, "current": current, "steps": steps}
+
+
 # Combat Power (CP value) and Damage Output
 combat_power = 0
 damage_output = 0

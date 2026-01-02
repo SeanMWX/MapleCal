@@ -1,0 +1,477 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>MapleCal 升级建议</title>
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;600&family=Space+Grotesk:wght@400;600&display=swap");
+
+      :root {
+        --bg: #f4efe7;
+        --bg-2: #f0e3d1;
+        --ink: #1c1b1a;
+        --muted: #6b655c;
+        --accent: #c94f2d;
+        --accent-2: #2a6f6a;
+        --card: #fff7ed;
+        --ring: rgba(201, 79, 45, 0.2);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        color: var(--ink);
+        font-family: "Noto Sans SC", "Space Grotesk", sans-serif;
+        background:
+          radial-gradient(900px 500px at 10% -10%, #ffe8c7 0, transparent 60%),
+          radial-gradient(700px 400px at 110% 10%, #d9f1ef 0, transparent 60%),
+          linear-gradient(180deg, var(--bg), var(--bg-2));
+        min-height: 100vh;
+      }
+
+      .wrap {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 32px 20px 60px;
+      }
+
+      header {
+        display: grid;
+        gap: 12px;
+        margin-bottom: 24px;
+        animation: fadeIn 450ms ease both;
+      }
+
+      h1 {
+        font-family: "Space Grotesk", "Noto Sans SC", sans-serif;
+        font-size: clamp(28px, 4vw, 42px);
+        margin: 0;
+        letter-spacing: 0.5px;
+      }
+
+      header p {
+        margin: 0;
+        color: var(--muted);
+      }
+
+      a {
+        color: var(--accent);
+        text-decoration: none;
+      }
+
+      .grid {
+        display: grid;
+        gap: 16px;
+      }
+
+      .grid-2 {
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      }
+
+      .grid-3 {
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      }
+
+      .card {
+        background: var(--card);
+        border: 1px solid rgba(0, 0, 0, 0.06);
+        border-radius: 16px;
+        padding: 16px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+      }
+
+      .card h2 {
+        margin: 0 0 12px;
+        font-size: 18px;
+      }
+
+      label {
+        display: grid;
+        gap: 6px;
+        font-size: 14px;
+        color: var(--muted);
+      }
+
+      input[type="number"],
+      select {
+        padding: 10px 12px;
+        border-radius: 10px;
+        border: 1px solid rgba(0, 0, 0, 0.12);
+        background: #fff;
+        font-size: 15px;
+        outline: none;
+        transition: box-shadow 150ms ease, border-color 150ms ease;
+      }
+
+      input[type="number"]:focus,
+      select:focus {
+        border-color: var(--accent);
+        box-shadow: 0 0 0 4px var(--ring);
+      }
+
+      .actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+      }
+
+      button {
+        border: none;
+        border-radius: 999px;
+        padding: 10px 18px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        color: #fff;
+        background: var(--accent);
+        transition: transform 120ms ease, box-shadow 120ms ease;
+      }
+
+      button.secondary {
+        background: var(--accent-2);
+      }
+
+      button:active {
+        transform: translateY(1px);
+      }
+
+      .result {
+        font-family: "Space Grotesk", "Noto Sans SC", sans-serif;
+        font-size: 22px;
+        font-weight: 600;
+      }
+
+      .note {
+        color: var(--muted);
+        font-size: 13px;
+      }
+
+      .delta-list {
+        display: grid;
+        gap: 8px;
+      }
+
+      .delta-item {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 8px 10px;
+        border-radius: 12px;
+        background: rgba(0, 0, 0, 0.03);
+        font-size: 14px;
+      }
+
+      .warning {
+        color: #8c2c1a;
+        font-size: 13px;
+      }
+
+      footer {
+        margin-top: 24px;
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(8px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <header>
+        <h1>升级建议与路线</h1>
+        <p>基于边际效应推荐下一步提升属性，并给出达标路线。返回主页：<a href="/">MapleCal 计算器</a></p>
+      </header>
+
+      <div class="grid grid-2">
+        <section class="card">
+          <h2>当前属性（只读）</h2>
+          <div class="grid grid-2" id="form-values"></div>
+        </section>
+        <section class="card">
+          <h2>目标与设置</h2>
+          <div class="grid">
+            <label>
+              目标指标
+              <select id="metric">
+                <option value="combat_power">战斗力</option>
+                <option value="panel">面板</option>
+                <option value="damage_output">输出</option>
+              </select>
+            </label>
+            <div>
+              <div class="note">当前数值</div>
+              <div class="result" id="current_metric">-</div>
+            </div>
+            <label>
+              单步增量（默认 1）
+              <input id="step" type="number" value="1" step="0.01" />
+            </label>
+            <label>
+              目标值（用于路线）
+              <input id="target_value" type="number" placeholder="例如 350000000" />
+            </label>
+            <label>
+              最大步骤数（避免过长）
+              <input id="max_steps" type="number" value="50" />
+            </label>
+          </div>
+          <div class="actions" style="margin-top: 12px">
+            <button id="run_recommend">推荐下一步</button>
+            <button id="run_plan" class="secondary">生成路线</button>
+          </div>
+          <div id="warning" class="warning"></div>
+        </section>
+      </div>
+
+      <div class="grid grid-3" style="margin-top: 16px">
+        <section class="card">
+          <h2>下一步建议</h2>
+          <div class="result" id="best_field">-</div>
+          <div class="note" id="best_detail">边际提升：-</div>
+        </section>
+        <section class="card" style="grid-column: span 2">
+          <h2>提升路线</h2>
+          <div class="note">按边际提升动态选择属性，直到达到目标或步数上限。</div>
+          <div class="delta-list" id="plan_list"></div>
+        </section>
+      </div>
+
+      <footer>
+        提示：输入为“百分比值”，内部会自动换算为比例；combat_power 需要 weapon_fix。
+      </footer>
+    </div>
+
+    <script>
+      const fields = [
+        { key: "main_base", label: "主属性基础值", value: 5635 },
+        { key: "main_skill", label: "主属性技能", value: 448 },
+        { key: "main_percent", label: "主属性% (输入百分比)", value: 523 },
+        { key: "main_notper", label: "主属性非%加成", value: 27465 },
+        { key: "sub_base", label: "副属性基础值", value: 2991 },
+        { key: "sub_skill", label: "副属性技能", value: 144 },
+        { key: "sub_percent", label: "副属性% (输入百分比)", value: 72 },
+        { key: "sub_notper", label: "副属性非%加成", value: 540 },
+        { key: "attack_base", label: "攻击力基础值", value: 3740 },
+        { key: "attack_skill", label: "攻击力技能", value: 190 },
+        { key: "empress_blessing", label: "女皇的祝福", value: 30 },
+        { key: "attack_shitu", label: "师徒系统攻击力加成", value: 0 },
+        { key: "weapon_fix", label: "weapon_fix", value: -109 },
+        { key: "attack_percet", label: "攻击力% (输入百分比)", value: 139 },
+        { key: "attack_notper", label: "攻击力非%加成", value: 0 },
+        { key: "dmg", label: "伤害% (输入百分比)", value: 141 },
+        { key: "dmg_skill", label: "伤害技能% (输入百分比)", value: 70 },
+        { key: "bossdmg", label: "Boss伤% (输入百分比)", value: 463 },
+        { key: "bossdmg_skill", label: "Boss伤技能% (输入百分比)", value: 63 },
+        { key: "dmg_shitu", label: "师徒系统伤害% (输入百分比)", value: 0 },
+        { key: "cridmg", label: "暴伤% (输入百分比)", value: 112.6 },
+        { key: "cridmg_skill", label: "暴伤技能% (输入百分比)", value: 17 },
+        { key: "final_damage", label: "最终伤害% (输入百分比)", value: 54 },
+        { key: "gwp_fd", label: "创世武器最终伤害% (gwp_fd)", value: 10 },
+        { key: "mst_fd", label: "怪怪卡最终伤害% (mst_fd)", value: 0 },
+        { key: "ign", label: "无视防御% (输入百分比)", value: 90 },
+        { key: "p2", label: "全属性防御穿透% (输入百分比)", value: 10 },
+        { key: "boss_def", label: "Boss防御% (输入百分比)", value: 300 },
+        { key: "weapon_rate", label: "武器系数", value: 1.2 }
+      ];
+
+      function renderForm(containerId, overrides = {}, readOnly = false) {
+        const container = document.getElementById(containerId);
+        container.innerHTML = "";
+        fields.forEach((field) => {
+          const wrapper = document.createElement("label");
+          wrapper.textContent = field.label;
+          const input = document.createElement("input");
+          input.type = "number";
+          input.id = field.key;
+          input.value = overrides[field.key] ?? field.value;
+          input.step = "0.01";
+          if (readOnly) {
+            input.disabled = true;
+            input.style.opacity = "0.6";
+          }
+          wrapper.appendChild(input);
+          container.appendChild(wrapper);
+        });
+      }
+
+      function num(id) {
+        const value = parseFloat(document.getElementById(id).value);
+        return Number.isFinite(value) ? value : 0;
+      }
+
+      function numOrNull(id) {
+        const raw = document.getElementById(id).value;
+        if (raw === "" || raw === null || raw === undefined) {
+          return null;
+        }
+        const value = parseFloat(raw);
+        return Number.isFinite(value) ? value : null;
+      }
+
+      function readValues() {
+        const values = {};
+        fields.forEach((field) => {
+          values[field.key] = field.key === "weapon_fix" ? numOrNull(field.key) : num(field.key);
+        });
+        values.delta_step = 1;
+        return values;
+      }
+
+      function savePreset(values) {
+        localStorage.setItem("maplecal_preset", JSON.stringify(values));
+      }
+
+      function loadPreset() {
+        const stored = localStorage.getItem("maplecal_preset");
+        if (!stored) {
+          return {};
+        }
+        try {
+          return JSON.parse(stored);
+        } catch {
+          return {};
+        }
+      }
+
+      function setWarning(message) {
+        document.getElementById("warning").textContent = message || "";
+      }
+
+      async function fetchJson(url, payload) {
+        const response = await fetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+        const data = await response.json();
+        if (!response.ok) {
+          throw new Error(data.detail || "请求失败");
+        }
+        return data;
+      }
+
+      async function updateCurrentMetric() {
+        setWarning("");
+        const metric = document.getElementById("metric").value;
+        const values = readValues();
+        try {
+          const data = await fetchJson("/api/calc", values);
+          let current = "-";
+          if (metric === "combat_power") {
+            current = data.combat_power === null ? "-" : data.combat_power.toLocaleString("en-US");
+          } else if (metric === "panel") {
+            current = data.panel.toLocaleString("en-US");
+          } else {
+            current = data.damage_output.toLocaleString("en-US");
+          }
+          document.getElementById("current_metric").textContent = current;
+          if (data.warning) {
+            setWarning(data.warning);
+          }
+        } catch (err) {
+          setWarning(err.message || "无法计算当前数值");
+          document.getElementById("current_metric").textContent = "-";
+        }
+      }
+
+      function renderPlanSteps(steps) {
+        const container = document.getElementById("plan_list");
+        container.innerHTML = "";
+        if (!steps || !steps.length) {
+          container.innerHTML = "<div class='delta-item'><span>无</span><span>-</span></div>";
+          return;
+        }
+        steps.forEach((step, index) => {
+          const row = document.createElement("div");
+          row.className = "delta-item";
+          const left = `${index + 1}. ${step.label || step.field}`;
+          const metricValue = Number.isFinite(step.metric_value) ? step.metric_value.toFixed(2) : "-";
+          const newValue = Number.isFinite(step.new_value) ? step.new_value.toFixed(4) : "-";
+          const right = `+${step.step} (${newValue}) → ${metricValue}`;
+          row.innerHTML = `<span>${left}</span><span>${right}</span>`;
+          container.appendChild(row);
+        });
+      }
+
+      async function runRecommend() {
+        setWarning("");
+        const metric = document.getElementById("metric").value;
+        const step = num("step") || 1;
+        const values = readValues();
+        try {
+          const data = await fetchJson("/api/recommend", { ...values, metric, step });
+          if (data.warning) {
+            setWarning(data.warning);
+            document.getElementById("best_field").textContent = "-";
+            document.getElementById("best_detail").textContent = "边际提升：-";
+            return;
+          }
+          document.getElementById("best_field").textContent = data.label || data.field || "-";
+          document.getElementById("best_detail").textContent = `边际提升：${data.percent.toFixed(4)}%`;
+          savePreset(values);
+          updateCurrentMetric();
+        } catch (err) {
+          setWarning(err.message || "推荐失败");
+        }
+      }
+
+      async function runPlan() {
+        setWarning("");
+        const metric = document.getElementById("metric").value;
+        const step = num("step") || 1;
+        const targetValue = num("target_value");
+        const maxSteps = Math.max(1, Math.floor(num("max_steps") || 50));
+        if (!Number.isFinite(targetValue) || targetValue <= 0) {
+          setWarning("请输入有效的目标值");
+          return;
+        }
+        const values = readValues();
+        try {
+          const data = await fetchJson("/api/plan", {
+            ...values,
+            metric,
+            step,
+            max_steps: maxSteps,
+            target_value: targetValue
+          });
+          if (data.warning) {
+            setWarning(data.warning);
+            renderPlanSteps([]);
+            return;
+          }
+          renderPlanSteps(data.steps || []);
+          savePreset(values);
+          updateCurrentMetric();
+        } catch (err) {
+          setWarning(err.message || "路线生成失败");
+        }
+      }
+
+      document.getElementById("run_recommend").addEventListener("click", runRecommend);
+      document.getElementById("run_plan").addEventListener("click", runPlan);
+      document.getElementById("metric").addEventListener("change", updateCurrentMetric);
+
+      document.addEventListener("input", (event) => {
+        if (event.target && event.target.matches("input[type='number']")) {
+          savePreset(readValues());
+        }
+      });
+
+      renderForm("form-values", loadPreset(), true);
+      updateCurrentMetric();
+    </script>
+  </body>
+</html>

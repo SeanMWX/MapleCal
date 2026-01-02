@@ -3,7 +3,7 @@
 from pathlib import Path
 from typing import Dict, List, Optional
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import HTMLResponse
 from pydantic import BaseModel
@@ -14,8 +14,11 @@ from calculator import (
     CombatPower,
     Damage,
     IGN,
+    DEFAULT_RECOMMEND_FIELDS,
     calculate_equivalent_increase,
     calculate_damage_output_percent_increase,
+    plan_to_target,
+    recommend_next_upgrade,
 )
 
 app = FastAPI()
@@ -23,6 +26,7 @@ app = FastAPI()
 BASE_DIR = Path(__file__).resolve().parent
 INDEX_FILE = BASE_DIR / "assets" / "index.html"
 COMPARE_FILE = BASE_DIR / "assets" / "compare.html"
+RECOMMEND_FILE = BASE_DIR / "assets" / "recommend.html"
 
 app.mount("/assets", StaticFiles(directory=BASE_DIR / "assets"), name="assets")
 
@@ -62,6 +66,20 @@ class CalcInput(BaseModel):
 
 class WeaponFixInput(CalcInput):
     known_cp: float
+
+
+class RecommendInput(CalcInput):
+    metric: str
+    step: float = 1.0
+    fields: Optional[List[str]] = None
+
+
+class PlanInput(CalcInput):
+    metric: str
+    target_value: float
+    step: float = 1.0
+    max_steps: int = 200
+    fields: Optional[List[str]] = None
 
 
 def build_attribute(data: CalcInput) -> Attribute:
@@ -142,6 +160,26 @@ def equivalent_fields() -> List[Dict[str, str]]:
     ]
 
 
+def recommend_fields() -> List[Dict[str, str]]:
+    return [
+        {"key": "main_base", "label": "主属性基础值"},
+        {"key": "main_percent", "label": "主属性%"},
+        {"key": "main_notper", "label": "主属性非%加成"},
+        {"key": "sub_base", "label": "副属性基础值"},
+        {"key": "sub_percent", "label": "副属性%"},
+        {"key": "sub_notper", "label": "副属性非%加成"},
+        {"key": "attack_base", "label": "攻击力基础值"},
+        {"key": "attack_percet", "label": "攻击力%"},
+        {"key": "attack_notper", "label": "攻击力非%加成"},
+        {"key": "dmg", "label": "伤害%"},
+        {"key": "bossdmg", "label": "Boss伤%"},
+        {"key": "cridmg", "label": "暴伤%"},
+        {"key": "final_damage", "label": "最终伤害%"},
+        {"key": "ign", "label": "无视防御%"},
+        {"key": "p2", "label": "全属性防御穿透%"},
+    ]
+
+
 def normalize_percent(data: CalcInput) -> CalcInput:
     normalized = data.model_copy()
     percent_fields = [
@@ -175,6 +213,11 @@ def home() -> HTMLResponse:
 @app.get("/compare", response_class=HTMLResponse)
 def compare_page() -> HTMLResponse:
     return HTMLResponse(COMPARE_FILE.read_text(encoding="utf-8"))
+
+
+@app.get("/recommend", response_class=HTMLResponse)
+def recommend_page() -> HTMLResponse:
+    return HTMLResponse(RECOMMEND_FILE.read_text(encoding="utf-8"))
 
 
 @app.post("/api/calc")
@@ -270,3 +313,70 @@ def api_weapon_fix(data: WeaponFixInput) -> Dict[str, float]:
     combat = CombatPower(attribute, attack, damage, ign_obj, normalized.gwp_fd, normalized.mst_fd, data.weapon_rate)
     weapon_fix = combat.calculate_weapon_fix(data.known_cp)
     return {"weapon_fix": weapon_fix}
+
+
+@app.post("/api/recommend")
+def api_recommend(data: RecommendInput) -> Dict[str, object]:
+    normalized = normalize_percent(data)
+    fields = data.fields or DEFAULT_RECOMMEND_FIELDS
+    if data.metric == "combat_power" and data.weapon_fix is None:
+        return {"warning": "weapon_fix 为空时无法计算战斗力推荐。"}
+
+    try:
+        rec = recommend_next_upgrade(
+            data.metric,
+            normalized.main_base, normalized.main_skill, normalized.main_percent, normalized.main_notper,
+            normalized.sub_base, normalized.sub_skill, normalized.sub_percent, normalized.sub_notper,
+            normalized.attack_base, normalized.attack_skill, normalized.empress_blessing, normalized.weapon_fix,
+            normalized.attack_percet, normalized.attack_notper, normalized.attack_shitu,
+            normalized.dmg, normalized.dmg_skill, normalized.bossdmg, normalized.bossdmg_skill,
+            normalized.dmg_shitu, normalized.cridmg, normalized.cridmg_skill, normalized.final_damage,
+            normalized.ign, normalized.p2, normalized.boss_def,
+            normalized.gwp_fd, normalized.mst_fd, data.weapon_rate,
+            step=data.step,
+            fields=fields,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    labels = {item["key"]: item["label"] for item in recommend_fields()}
+    if not rec:
+        return {"warning": "无法生成推荐，请检查输入。"}
+    return {
+        "field": rec["field"],
+        "label": labels.get(rec["field"], rec["field"]),
+        "percent": rec["percent"],
+        "step": rec["step"],
+    }
+
+
+@app.post("/api/plan")
+def api_plan(data: PlanInput) -> Dict[str, object]:
+    normalized = normalize_percent(data)
+    fields = data.fields or DEFAULT_RECOMMEND_FIELDS
+    if data.metric == "combat_power" and data.weapon_fix is None:
+        return {"warning": "weapon_fix 为空时无法计算战斗力路线。"}
+
+    try:
+        plan = plan_to_target(
+            data.metric,
+            data.target_value,
+            normalized.main_base, normalized.main_skill, normalized.main_percent, normalized.main_notper,
+            normalized.sub_base, normalized.sub_skill, normalized.sub_percent, normalized.sub_notper,
+            normalized.attack_base, normalized.attack_skill, normalized.empress_blessing, normalized.weapon_fix,
+            normalized.attack_percet, normalized.attack_notper, normalized.attack_shitu,
+            normalized.dmg, normalized.dmg_skill, normalized.bossdmg, normalized.bossdmg_skill,
+            normalized.dmg_shitu, normalized.cridmg, normalized.cridmg_skill, normalized.final_damage,
+            normalized.ign, normalized.p2, normalized.boss_def,
+            normalized.gwp_fd, normalized.mst_fd, data.weapon_rate,
+            step=data.step,
+            fields=fields,
+            max_steps=data.max_steps,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    labels = {item["key"]: item["label"] for item in recommend_fields()}
+    for step in plan["steps"]:
+        step["label"] = labels.get(step["field"], step["field"])
+    return plan
