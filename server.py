@@ -39,6 +39,7 @@ class CalcInput(BaseModel):
     attack_base: float
     attack_skill: float
     empress_blessing: float
+    attack_shitu: float
     weapon_fix: Optional[float] = None
     attack_percet: float
     attack_notper: float
@@ -46,6 +47,7 @@ class CalcInput(BaseModel):
     dmg_skill: float
     bossdmg: float
     bossdmg_skill: float
+    dmg_shitu: float
     cridmg: float
     cridmg_skill: float
     final_damage: float
@@ -83,6 +85,7 @@ def build_attack(data: CalcInput, weapon_fix: Optional[float] = None) -> Attack:
         weapon_fix if weapon_fix is not None else data.weapon_fix,
         data.attack_percet,
         data.attack_notper,
+        data.attack_shitu,
     )
 
 
@@ -92,6 +95,7 @@ def build_damage(data: CalcInput) -> Damage:
         data.dmg_skill,
         data.bossdmg,
         data.bossdmg_skill,
+        data.dmg_shitu,
         data.cridmg,
         data.cridmg_skill,
         data.final_damage,
@@ -113,7 +117,6 @@ def delta_fields() -> List[Dict[str, str]]:
         {"key": "bossdmg", "label": "Boss伤%"},
         {"key": "cridmg", "label": "暴伤%"},
         {"key": "final_damage", "label": "最终伤害%"},
-        {"key": "mst_fd", "label": "怪怪卡最终伤害%"},
         {"key": "ign", "label": "无视防御%"},
         {"key": "p2", "label": "全属性防御穿透%"},
     ]
@@ -134,7 +137,6 @@ def equivalent_fields() -> List[Dict[str, str]]:
         {"key": "bossdmg", "label": "Boss伤%"},
         {"key": "cridmg", "label": "暴伤%"},
         {"key": "final_damage", "label": "最终伤害%"},
-        {"key": "mst_fd", "label": "怪怪卡最终伤害%"},
         {"key": "ign", "label": "无视防御%"},
         {"key": "p2", "label": "全属性防御穿透%"},
     ]
@@ -150,6 +152,7 @@ def normalize_percent(data: CalcInput) -> CalcInput:
         "dmg_skill",
         "bossdmg",
         "bossdmg_skill",
+        "dmg_shitu",
         "cridmg",
         "cridmg_skill",
         "final_damage",
@@ -200,8 +203,8 @@ def api_calc(data: CalcInput) -> Dict[str, object]:
     percent_increase = calculate_damage_output_percent_increase(
         normalized.main_base, normalized.main_skill, normalized.main_percent, normalized.main_notper,
         normalized.sub_base, normalized.sub_skill, normalized.sub_percent, normalized.sub_notper,
-        normalized.attack_base, normalized.attack_skill, normalized.empress_blessing, normalized.weapon_fix, normalized.attack_percet, normalized.attack_notper,
-        normalized.dmg, normalized.dmg_skill, normalized.bossdmg, normalized.bossdmg_skill, normalized.cridmg, normalized.cridmg_skill, normalized.final_damage,
+        normalized.attack_base, normalized.attack_skill, normalized.empress_blessing, normalized.weapon_fix, normalized.attack_percet, normalized.attack_notper, normalized.attack_shitu,
+        normalized.dmg, normalized.dmg_skill, normalized.bossdmg, normalized.bossdmg_skill, normalized.dmg_shitu, normalized.cridmg, normalized.cridmg_skill, normalized.final_damage,
         normalized.ign, normalized.p2, normalized.boss_def,
         normalized.gwp_fd, normalized.mst_fd, data.weapon_rate,
         step=step,
@@ -233,8 +236,8 @@ def api_equivalent(data: CalcInput, base_field: str) -> Dict[str, object]:
     equivalents = calculate_equivalent_increase(
         normalized.main_base, normalized.main_skill, normalized.main_percent, normalized.main_notper,
         normalized.sub_base, normalized.sub_skill, normalized.sub_percent, normalized.sub_notper,
-        normalized.attack_base, normalized.attack_skill, normalized.empress_blessing, normalized.weapon_fix, normalized.attack_percet, normalized.attack_notper,
-        normalized.dmg, normalized.dmg_skill, normalized.bossdmg, normalized.bossdmg_skill, normalized.cridmg, normalized.cridmg_skill, normalized.final_damage,
+        normalized.attack_base, normalized.attack_skill, normalized.empress_blessing, normalized.weapon_fix, normalized.attack_percet, normalized.attack_notper, normalized.attack_shitu,
+        normalized.dmg, normalized.dmg_skill, normalized.bossdmg, normalized.bossdmg_skill, normalized.dmg_shitu, normalized.cridmg, normalized.cridmg_skill, normalized.final_damage,
         normalized.ign, normalized.p2, normalized.boss_def,
         normalized.gwp_fd, normalized.mst_fd, data.weapon_rate,
         base_field=base_field,
