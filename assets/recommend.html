@@ -486,14 +486,45 @@
           container.innerHTML = "<div class='delta-item'><span>无</span><span>-</span></div>";
           return;
         }
-        steps.forEach((step, index) => {
+        const groups = [];
+        let current = null;
+        steps.forEach((step) => {
+          if (!current || current.field !== step.field) {
+            current = { field: step.field, label: step.label, steps: [step] };
+            groups.push(current);
+          } else {
+            current.steps.push(step);
+          }
+        });
+
+        let cursor = 1;
+        groups.forEach((group) => {
+          const first = group.steps[0];
+          const last = group.steps[group.steps.length - 1];
+          const count = group.steps.length;
+          const startIndex = cursor;
+          const endIndex = cursor + count - 1;
+          cursor += count;
+
+          const rangeLabel = count === 1 ? `${startIndex}.` : `${startIndex}-${endIndex}`;
+          const left = `${rangeLabel} ${group.label || group.field}`;
+
+          const totalStep = group.steps.reduce((sum, item) => sum + (Number(item.step) || 0), 0);
+          const newValue = Number.isFinite(last.new_value) ? last.new_value.toFixed(4) : "-";
+          const lastMetric = Number.isFinite(last.metric_value) ? last.metric_value.toFixed(2) : "-";
+
+          let percentGain = "-";
+          if (Number.isFinite(first.metric_value) && Number.isFinite(first.percent_gain)) {
+            const base = first.metric_value / (1 + first.percent_gain / 100);
+            if (base > 0 && Number.isFinite(last.metric_value)) {
+              const totalPercent = ((last.metric_value - base) / base) * 100;
+              percentGain = totalPercent.toFixed(4);
+            }
+          }
+
           const row = document.createElement("div");
           row.className = "delta-item";
-          const left = `${index + 1}. ${step.label || step.field}`;
-          const metricValue = Number.isFinite(step.metric_value) ? step.metric_value.toFixed(2) : "-";
-          const newValue = Number.isFinite(step.new_value) ? step.new_value.toFixed(4) : "-";
-          const percentGain = Number.isFinite(step.percent_gain) ? step.percent_gain.toFixed(4) : "-";
-          const right = `+${step.step} (${newValue}) → +${percentGain}% (${metricValue})`;
+          const right = `+${totalStep} (${newValue}) → +${percentGain}% (${lastMetric})`;
           row.innerHTML = `<span>${left}</span><span>${right}</span>`;
           container.appendChild(row);
         });
